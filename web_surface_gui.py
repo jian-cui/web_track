@@ -115,21 +115,21 @@ def draw_figure(latsize, lonsize):
     dmap.fillcontinents(color='grey')
     dmap.drawmapboundary()
     return p,dmap
-def on_left_click(event):
+def on_right_click(event):
     if event.button == 3:
         print 'you pressed: ', event.button, event.xdata, event.ydata
         x = event.xdata
         y = event.ydata
         pic_zoom_in(x, y)
     else:
-        print 'please press the map with left button'
+        print 'please press the map with right button'
     return True
-def on_right_click(event):
+def on_left_click(event):
     if event.button == 1:
         print 'you clicked: ', event.button, event.xdata,event.ydata
         x = event.xdata
         y = event.ydata
-        pic_surface(lond, latd)
+        pic_trend(x, y)
     else:
         print "Please press the map with right button"
     return True
@@ -138,10 +138,10 @@ def pic_zoom_in(x,y):
     lonsize=[x - 0.6,x + 0.6]
     p, m = draw_figure(latsize, lonsize)
     m.plot(lon,lat,'r.',lonc,latc,'b+')
-    m.plot(lon,lat,'r.',lonc,latc,'b+')
-    surface_cid = fig.canvas.mpl_connect('button_press_event', on_right_click)
+#    m.plot(lon,lat,'r.',lonc,latc,'b+')
+    surface_cid = p.canvas.mpl_connect('button_press_event', on_left_click)
     plt.show()
-def pic_surface(lond, latd):
+def pic_trend(lond, latd):
     dt=60*60.
     tau=dt/111111.
     lont=[]
@@ -150,14 +150,8 @@ def pic_surface(lond, latd):
     vfinal=[]
     for i in range(startrecord,endrecord):
         timeurl = '['+str(i)+':1:'+str(i)+']'
-        if model == 'massbay':        
-            uvposition = str([0])+'[0:1:90414]' # this is the number of grid points in thie 30yr model
-            url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-        elif model == '30yr':     
-            uvposition = str([0])+'[0:1:90414]' # this is the number of grid points in thie 30yr model
-            url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-        else:
-            sys.exit('Please input right model name.')
+        uvposition = str([0])+'[0:1:90414]' # this is the number of grid points in thie 30yr model
+        url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
         dataset = open_url(url)
         utotal=np.array(dataset['u'])
         vtotal=np.array(dataset['v'])
@@ -221,7 +215,7 @@ Grid={'x':x,'y':y,'xc':xc,'yc':yc,'lon':lon,'lat':lat,'lonc':lonc,'latc':latc,'c
 ###########################draw the basic map############################################
 fig, m = draw_figure(lat, lon)
 m.plot(lon,lat,'r.',lonc,latc,'b+')
-cid = fig.canvas.mpl_connect('button_press_event', on_left_click)
+cid = fig.canvas.mpl_connect('button_press_event', on_right_click)
 plt.show()
 
 

@@ -21,9 +21,45 @@ urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][27:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
-la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
-lo=7050.17
-
+#la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
+#lo=7050.17
+#urlname = raw_input('please input model name(massbay or 30yr): ')
+#depth = int(raw_input('Please input the depth(negtive number): '))
+#TIME = raw_input('Please input starttime(2013-10-18 00:00:00): ')
+#numdays = int(raw_input('Please input numday(positive number): '))
+#def isNum(value):
+#    try: 
+#        float(value)
+#    except(ValueError): 
+#        print("Please input a number")
+#la = raw_input('Please input latitude(default 4224.7): ')
+#if la == '':
+#    la = 4224.7
+#else:
+#    isNum(la)
+#    la = float(la)
+#lo = raw_input('Please input longitude(default 7050.17): ')
+#if lo == '':
+#    lo == 7050.17
+#else:
+#    isNum(lo)
+#    lo = float()
+def input_loc(coor_type):
+    if coor_type == 'lat':
+        l = ('latitude', 4224.7)
+    elif coor_type == 'lon':
+        l = ('longitude', 7050.17)
+    else:
+        raise NameError
+    
+    loc = raw_input('Please input %s(default %.2f): ' % l)
+    if loc == '':
+        loc = l[1]
+    else:
+        loc = loc
+    return loc
+la = input_loc('lat')
+lo = input_loc('lon')
 #############get the index of lat and lon???
 def nearlonlat(lon,lat,lonp,latp):
     'there is a totally same fuction in web_surface.py.--JC'
@@ -167,16 +203,18 @@ latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
 lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
 m = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
   llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')#,fix_aspect=False)
-m.drawparallels(np.arange(round(min(latsize), 0),round(max(latsize)+1, 0),axes_interval(max(latd)-min(latd))),labels=[1,0,0,0])
-m.drawmeridians(np.arange(round(min(lonsize), 0),round(max(lonsize)+1, 0),axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
+#m.drawparallels(np.arange(round(min(latsize), 1),round(max(latsize)+1, 1),axes_interval(max(latd)-min(latd))),labels=[1,0,0,0])
+m.drawparallels(np.arange(round(min(latsize)-1, 0),round(max(latsize)+1, 0),1),labels=[1,0,0,0])
+m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
 m.drawcoastlines()
-m.fillcontinents(color='red')
+m.fillcontinents(color='blue')
 m.drawmapboundary()
 '''
 m.plot(lon,lat,'r.',lonc,latc,'b+')
 fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
 '''
+plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
 plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.show()
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME)) 

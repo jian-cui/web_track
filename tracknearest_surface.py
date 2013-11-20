@@ -19,7 +19,8 @@ import sys
 print 'This routine reads a control file called ctrl_trackzoomin.csv'
 urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][27:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
-TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
+#TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
+TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7050.17
@@ -75,7 +76,7 @@ def nearlonlat(lon,lat,lonp,latp):
     
 
 if urlname=="massbay":
-    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S") 
+#    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S") 
     now=datetime.now()
     if TIME>now:
          diff=(TIME-now).days
@@ -196,6 +197,24 @@ def axes_interval(x):
         n=0.01
     return n
 
+###########save forecast in .dat file################   
+def write_data(f, pointnum, TIME):
+    trackpoints_time = [TIME]
+    for i in range(pointnum):
+        trackpoints_time.append(TIME + datetime(second=3600))
+        f.write('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n' % (str(trackpoints_time[0]), str(trackpoints_time[-1])))
+
+pointnum = len(latd)
+f = open('fID.dat', 'a+')
+if len(f.read()) == 0:
+    f.write('startdate' + ' ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n') 
+    write_data(f, pointnum, TIME)
+else:
+    write_data(f, pointnum, TIME)
+f.write('\n')
+f.close()
+
+############draw pic########################
 #plt.figure()
 extra_lat=[(max(latd)-min(latd))/10.]
 extra_lon=[(max(lond)-min(lond))/10.]
@@ -218,9 +237,12 @@ plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[
 plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.show()
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME)) 
-plt.savefig(urlname+'driftrack.png')
+plt.savefig(urlname+'driftrack.png', dpi = 200)
 '''
     return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
 '''
+
+        
+

@@ -1,6 +1,6 @@
 urlname("massbay or 30yr"):massbay
 depth(negtive number):-1
-starttime(2013-10-18 00:00:00):2013-11-19 14:00:00
+starttime(2013-10-18 00:00:00):2013-11-19 19:59:00
 numday(positive number):2
 
 Hint:1.when you chose massbay model. Please make sure your input date within 3 days around now.

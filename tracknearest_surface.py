@@ -166,7 +166,7 @@ for i in range(startrecord,endrecord):
                u=np.array(dataset['u'])
                v=np.array(dataset['v'])  
 ################get the point according the position###################
-               #print kf,u[0,0,0],v[0,0,0],layer
+#               print kf,u[0,0,0],v[0,0,0],layer
                par_u=u[0,0,0]
                par_v=v[0,0,0]   
                xdelta=par_u*60*60
@@ -196,24 +196,30 @@ def axes_interval(x):
     elif 0.01<abs(x)<=0.1:
         n=0.01
     return n
+	
 
-###########save forecast in .dat file################   
-def write_data(f, pointnum, TIME):
-    trackpoints_time = [TIME]
+#time_trackpoints = [TIME]
+###########save forecast in f[ID].dat file################
+def write_data(file_open, pointnum, TIME, latd, lond):
+    time_trackpoints = [TIME]
     for i in range(pointnum):
-        trackpoints_time.append(TIME + datetime(second=3600))
-        f.write('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n' % (str(trackpoints_time[0]), str(trackpoints_time[-1])))
+        time_trackpoints.append(TIME + timedelta(hours=1))
+        string = ('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n')
+        something = (str(time_trackpoints[0]), str(time_trackpoints[-1]))
+        file_open.seek(0, 2)
+#        file_open.write(('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n') % (str(time_trackpoints[0]), str(time_trackpoints[-1])))
+        file_open.write(string % something)
 
 pointnum = len(latd)
-f = open('fID.dat', 'a+')
+f = open('fID.dat','a+')
 if len(f.read()) == 0:
-    f.write('startdate' + ' ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n') 
-    write_data(f, pointnum, TIME)
+    f.write('startdate' + '  ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n') 
+    write_data(f, pointnum, TIME, latd, lond)
 else:
-    write_data(f, pointnum, TIME)
+    write_data(f, pointnum, TIME, latd, lond)
 f.write('\n')
 f.close()
-
+'''
 ############draw pic########################
 #plt.figure()
 extra_lat=[(max(latd)-min(latd))/10.]
@@ -228,21 +234,21 @@ m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),axes
 m.drawcoastlines()
 m.fillcontinents(color='blue')
 m.drawmapboundary()
-'''
+
 m.plot(lon,lat,'r.',lonc,latc,'b+')
 fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
-'''
+
 plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
 plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.show()
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME)) 
 plt.savefig(urlname+'driftrack.png', dpi = 200)
-'''
-    return True
+
+return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
-'''
+
 
         
-
+'''

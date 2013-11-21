@@ -45,24 +45,21 @@ numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 #else:
 #    isNum(lo)
 #    lo = float()
-def input_default(coor_type):
-    if coor_type == 'lat':
-        l = ('latitude', 4150.1086)
-    elif coor_type == 'lon':
-        l = ('longitude', 7005.7876)
-    elif coor_type == 'ID':
-        l = ('ID', 130410702)
+
+def input_with_default(data, v_default):
+    '''
+    return a str
+    '''
+    l = (data, str(v_default))
+    data_input = raw_input('Please input %s(default %s): ' % l)
+    if data_input == '':
+        data_input = l[1]
     else:
-        raise NameError
-    loc = raw_input('Please input %s(default %.4f): ' % l)
-    if loc == '':
-        loc = l[1]
-    else:
-        loc = loc
-    return loc
-ID = input_default('ID')
-la = input_default('lat')
-lo = input_default('lon')
+        data_input = data_input
+    return data_input
+ID = float(input_with_default('ID', 130410702))
+la = float(input_with_default('lat', 4150.1086))
+lo = float(input_with_default('lon', 7005.7876))
 #############get the index of lat and lon???
 def nearlonlat(lon,lat,lonp,latp):
     'there is a totally same fuction in web_surface.py.--JC'

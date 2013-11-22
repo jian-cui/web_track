@@ -23,7 +23,7 @@ depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
-#lo=7050.17
+#lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
 #depth = int(raw_input('Please input the depth(negtive number): '))
 #TIME = raw_input('Please input starttime(2013-10-18 00:00:00): ')
@@ -33,34 +33,34 @@ numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 #        float(value)
 #    except(ValueError):
 #        print("Please input a number")
-#la = raw_input('Please input latitude(default 4224.7): ')
+#la = raw_input('Please input latitude(default 4150.1086): ')
 #if la == '':
-#    la = 4224.7
+#    la = 4150.1086
 #else:
 #    isNum(la)
 #    la = float(la)
-#lo = raw_input('Please input longitude(default 7050.17): ')
+#lo = raw_input('Please input longitude(default 7005.7876): ')
 #if lo == '':
-#    lo == 7050.17
+#    lo == 7005.7876
 #else:
 #    isNum(lo)
 #    lo = float()
-def input_loc(coor_type):
-    if coor_type == 'lat':
-        l = ('latitude', 4224.7)
-    elif coor_type == 'lon':
-        l = ('longitude', 7050.17)
-    else:
-        raise NameError
 
-    loc = raw_input('Please input %s(default %.2f): ' % l)
-    if loc == '':
-        loc = l[1]
+
+def input_with_default(data, v_default):
+    '''
+    return a str
+    '''
+    l = (data, str(v_default))
+    data_input = raw_input('Please input %s(default %s): ' % l)
+    if data_input == '':
+        data_input = l[1]
     else:
-        loc = loc
-    return loc
-la = input_loc('lat')
-lo = input_loc('lon')
+        data_input = data_input
+    return data_input
+ID = float(input_with_default('ID', 130410702))
+la = float(input_with_default('lat', 4150.1086))
+lo = float(input_with_default('lon', 7005.7876))
 #############get the index of lat and lon???
 def nearlonlat(lon,lat,lonp,latp):
     'there is a totally same fuction in web_surface.py.--JC'
@@ -198,12 +198,11 @@ def axes_interval(x):
     return n
 
 
-#time_trackpoints = [TIME]
 ###########save forecast in f[ID].dat file################
 def write_data(file_open, pointnum, TIME, latd, lond):
     time_trackpoints = [TIME]
     for i in range(pointnum):
-        time_trackpoints.append(TIME + timedelta(hours=1))
+        time_trackpoints.append(time_trackpoints[-1] + timedelta(hours=1))
         string = ('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n')
         something = (str(time_trackpoints[0]), str(time_trackpoints[-1]))
         file_open.seek(0, 2)           #This line have to be added in Windows()
@@ -211,7 +210,7 @@ def write_data(file_open, pointnum, TIME, latd, lond):
         file_open.write(string % something)
 
 pointnum = len(latd)
-f = open('fID.dat','a+')
+f = open('f%s.dat' % ID,'a+')
 if len(f.read()) == 0:
     f.write('startdate' + '  ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n')
     write_data(f, pointnum, TIME, latd, lond)

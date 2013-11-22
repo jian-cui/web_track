@@ -29,9 +29,9 @@ numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 #TIME = raw_input('Please input starttime(2013-10-18 00:00:00): ')
 #numdays = int(raw_input('Please input numday(positive number): '))
 #def isNum(value):
-#    try: 
+#    try:
 #        float(value)
-#    except(ValueError): 
+#    except(ValueError):
 #        print("Please input a number")
 #la = raw_input('Please input latitude(default 4224.7): ')
 #if la == '':
@@ -52,7 +52,7 @@ def input_loc(coor_type):
         l = ('longitude', 7050.17)
     else:
         raise NameError
-    
+
     loc = raw_input('Please input %s(default %.2f): ' % l)
     if loc == '':
         loc = l[1]
@@ -72,11 +72,11 @@ def nearlonlat(lon,lat,lonp,latp):
     #dist1=np.abs(dx)+np.abs(dy)
     i=np.argmin(dist2)
     min_dist=np.sqrt(dist2[i])
-    return i,min_dist 
-    
+    return i,min_dist
+
 
 if urlname=="massbay":
-#    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S") 
+#    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     now=datetime.now()
     if TIME>now:
          diff=(TIME-now).days
@@ -124,7 +124,7 @@ siglay=np.array(dataset['siglay'])
 h=np.array(dataset['h'])
 
 '''
-###############################################################################    
+###############################################################################
 def onclick(event):
     print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
         event.button, event.x, event.y, event.xdata, event.ydata)
@@ -152,23 +152,23 @@ kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
 kv,distanceV=nearlonlat(lon,lat,lo,la)
 depthtotal=siglay[:,kv]*h[kv]
 layer=np.argmin(abs(depthtotal-depth))
-        
+
 for i in range(startrecord,endrecord):
-############read the particular time model from website#########    
+############read the particular time model from website#########
                timeurl='['+str(i)+':1:'+str(i)+']'
                uvposition=str([layer])+str([kf])
                if urlname=="30yr":
-                       url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition 
+                       url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
                else:
                        url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-                
+
                dataset = open_url(url)
                u=np.array(dataset['u'])
-               v=np.array(dataset['v'])  
+               v=np.array(dataset['v'])
 ################get the point according the position###################
 #               print kf,u[0,0,0],v[0,0,0],layer
                par_u=u[0,0,0]
-               par_v=v[0,0,0]   
+               par_v=v[0,0,0]
                xdelta=par_u*60*60
                ydelta=par_v*60*60
                latdelta=ydelta/111111
@@ -178,12 +178,12 @@ for i in range(startrecord,endrecord):
                latd.append(la)
                lond.append(lo)
                kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
-               kv,distanceV=nearlonlat(lon,lat,lo,la)# nearest triangle vertex V - vertex 
+               kv,distanceV=nearlonlat(lon,lat,lo,la)# nearest triangle vertex V - vertex
                depthtotal=siglay[:,kv]*h[kv]
 #               layer=np.argmin(abs(depthtotal-depth))
                if distanceV>=0.3:
                    if i==startrecord:
-                      print 'Sorry, your start position is NOT in the model domain' 
+                      print 'Sorry, your start position is NOT in the model domain'
                    break
 def axes_interval(x):
     n=0
@@ -196,7 +196,7 @@ def axes_interval(x):
     elif 0.01<abs(x)<=0.1:
         n=0.01
     return n
-	
+
 
 #time_trackpoints = [TIME]
 ###########save forecast in f[ID].dat file################
@@ -206,20 +206,20 @@ def write_data(file_open, pointnum, TIME, latd, lond):
         time_trackpoints.append(TIME + timedelta(hours=1))
         string = ('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n')
         something = (str(time_trackpoints[0]), str(time_trackpoints[-1]))
-        file_open.seek(0, 2)
+        file_open.seek(0, 2)           #This line have to be added in Windows()
 #        file_open.write(('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n') % (str(time_trackpoints[0]), str(time_trackpoints[-1])))
         file_open.write(string % something)
 
 pointnum = len(latd)
 f = open('fID.dat','a+')
 if len(f.read()) == 0:
-    f.write('startdate' + '  ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n') 
+    f.write('startdate' + '  ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n')
     write_data(f, pointnum, TIME, latd, lond)
 else:
     write_data(f, pointnum, TIME, latd, lond)
 f.write('\n')
 f.close()
-'''
+
 ############draw pic########################
 #plt.figure()
 extra_lat=[(max(latd)-min(latd))/10.]
@@ -234,21 +234,19 @@ m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),axes
 m.drawcoastlines()
 m.fillcontinents(color='blue')
 m.drawmapboundary()
-
+'''
 m.plot(lon,lat,'r.',lonc,latc,'b+')
 fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
-
+'''
 plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
 plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.show()
-plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME)) 
+plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
 plt.savefig(urlname+'driftrack.png', dpi = 200)
-
+'''
 return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
-
-
-        
 '''
+

@@ -58,7 +58,7 @@ def input_with_default(data, v_default):
     else:
         data_input = data_input
     return data_input
-ID = float(input_with_default('ID', 130410702))
+ID = int(input_with_default('ID', 130410702))
 la = float(input_with_default('lat', 4150.1086))
 lo = float(input_with_default('lon', 7005.7876))
 #############get the index of lat and lon???

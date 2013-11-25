@@ -26,8 +26,10 @@ def pos_real(f, time, ID):
         data_temp = line.split()
         if data_temp[0] = ID:
             time_real.append(datetime.strptime(line[19:32].strip(), "%m %d   %H  %M"))
-            pos = coor.append((data_temp[7],data_temp[8]))
+            coor.append((data_temp[7],data_temp[8]))
     time_index = calc_time_nearest(datetime.strptime(time, "%Y-%m-%d %H:%M"), time_real)
+    
+    
 time_cal = input_with_default('the time you want to calculate', '2013-11-21 11:33')
 ID = input_with_default('drifter ID', 130410702)
 lat_fcasted = input_with_default('latitude forecasted', 4150.1086)

@@ -206,7 +206,7 @@ def write_data(file_open, pointnum, TIME, latd, lond):
         string = ('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n')
         something = (str(time_trackpoints[0]), str(time_trackpoints[-1]))
         file_open.seek(0, 2)           #This line have to be added in Windows()
-#        file_open.write(('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n') % (str(time_trackpoints[0]), str(time_trackpoints[-1])))
+#        file_open.write(('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n') % (str(time_trackpoints[0]), str(time_trackpoints    1])))
         file_open.write(string % something)
 
 pointnum = len(latd)

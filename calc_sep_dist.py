@@ -70,16 +70,16 @@ def pos_real(f, time_cal, ID):
 #        for i in data:
 #            dtable.put_cell(rows, data.index(i), 1, data[data.index(i)], 0)
 def write_line(f, data):
-    line = ''
-    for word in data:
+    line = str(data[0])
+    for word in data[1:]:
         line = line + ' ' + str(word)
     f.write(line + '\n')
     
-def write_data(filename, data, head = None):
+def write_data(f, data, head = ''):
     if not len(f.read()):
         f.write(head + '\n')
     f.seek(0, 2)
-    write_data(f, data)
+    write_line(f, data)
 
 #def save_excel1(filename, data, head):
 #    dexcel = xlwt.Workbook()
@@ -95,7 +95,7 @@ def write_data(filename, data, head = None):
 #    dexcel.save
 time_input = input_with_default('the time you want to calculate', '11-21 11:33')
 time_cal = time.strptime(time_input, "%m-%d %H:%M")
-ID = input_with_default('drifter ID', 130410702)
+ID = input_with_default('drifter ID', 130410701)
 lat_fcasted = input_with_default('latitude forecasted', 4150.1086)
 lont_fcasted = input_with_default('longitude forecasted', 7005.7876)
 datafile = r'http://www.nefsc.noaa.gov/drifter/drift_audubon_2013_1.dat'
@@ -106,6 +106,6 @@ distance = dist(coor[0], coor[1], float(lat_fcasted), float(lont_fcasted))
 print distance[0]
 data = (time_input, ID, str(distance[0]))
 #save_excel('distance.xls', data = (time_input, ID, str(distance[0])))
-f = open('distance.dat', 'a+')
-write_data('distance.dat', data, head = 'date ID distance')
-f.close()
+fs = open('distance.dat', 'a+')
+write_data(fs, data, 'date ID distance')
+fs.close()

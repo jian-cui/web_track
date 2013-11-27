@@ -149,6 +149,11 @@ latd,lond=[],[]
 
 kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
 kv,distanceV=nearlonlat(lon,lat,lo,la)
+
+if h[kv] < 0:
+    print 'Sorry, your position is on land, please try another point'
+    sys.exit()
+    
 depthtotal=siglay[:,kv]*h[kv]
 layer=np.argmin(abs(depthtotal-depth))
 

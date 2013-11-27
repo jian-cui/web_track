@@ -4,6 +4,17 @@ Created on Mon Nov 25 12:35:02 2013
 
 @author: jmanning
 """
+import sys
+import numpy as np
+from pydap.client import open_url
+from utilities import nearxy
+import datetime as dt
+from matplotlib.dates import num2date, date2num
+from matplotlib.ticker import FormatStrFormatter
+import matplotlib.mlab as ml
+import scipy
+import time
+import matplotlib.pyplot as plt
 
 def getdrift_header():
     # simple function that returns all ids in the drift_header table
@@ -57,8 +68,7 @@ def getdrift(id):
     dep=[dep[i] for i in index]
     return lat, lon, datet, dep
     
-def getdrift_raw(filename,id3,interval,datetime_wanted):
-    
+def getdrift_raw(filename,id3,interval,datetime_wanted,num = None,step_size = None):
   # range_time is a number,unit by one day.  datetime_wanted format is num
   d=ml.load(filename)
   lat1=d[:,8]
@@ -74,9 +84,13 @@ def getdrift_raw(filename,id3,interval,datetime_wanted):
   for i in range(len(idd)):
       time1.append(date2num(dt.datetime.strptime(str(int(h[i]))+' '+str(int(day[i]))+' '+str(int(month[i]))+' '+str(int(year[i])), "%H %d %m %y")))
 
-
   idg1=list(ml.find(idd==id3))
-  idg2=list(ml.find(np.array(time1)<=datetime_wanted+interval/24))
+  if not num:
+      idg2=list(ml.find(np.array(time1)<=datetime_wanted+interval/24))
+      idg3=list(ml.find(np.array(time1)>=datetime_wanted-0.1))
+  else:
+      idg2=list(ml.find(np.array(time1)<=datetime_wanted+step_size/24.0*(num-1)+0.25))
+      idg3=list(ml.find(np.array(time1)>=datetime_wanted-interval/24.0))
   "'0.25' means the usual Interval, It can be changed base on different drift data "
   idg3=list(ml.find(np.array(time1)>=datetime_wanted-0.1))
   idg23=list(set(idg2).intersection(set(idg3)))
@@ -90,44 +104,11 @@ def getdrift_raw(filename,id3,interval,datetime_wanted):
       lon.append(round(lon1[idg[x]],4))
       time.append(round(time1[idg[x]],4))
   # time is num
-  return lat,lon,time
-
-def getdrift_raw_range_latlon(filename,id3,interval,datetime_wanted_1,num,step_size):
-    
-# this is for plot all the data in same range of lat and lon. id3 means int format of drift number
-#'interval' means range of time, 'num' means how many pictures we will get
-  d=ml.load(filename)
-  
-  lat1=d[:,8]
-  lon1=d[:,7]
-  idd=d[:,0]
-  year=[]
-  for n in range(len(idd)):
-      year.append(str(idd[n])[0:2])
-  h=d[:,4]
-  day=d[:,3]
-  month=d[:,2]
-  time1=[]
-  for i in range(len(idd)):
-      time1.append(date2num(dt.datetime.strptime(str(int(h[i]))+' '+str(int(day[i]))+' '+str(int(month[i]))+' '+str(int(year[i])), "%H %d %m %y")))
-
-
-  idg1=list(ml.find(idd==id3))
-  idg2=list(ml.find(np.array(time1)<=datetime_wanted_1+step_size/24.0*(num-1)+0.25))
-  "'0.25' means the usual Interval, It can be changed base on different drift data "
-  idg3=list(ml.find(np.array(time1)>=datetime_wanted_1-interval/24.0))
-  idg23=list(set(idg2).intersection(set(idg3)))
-  # find which data we need
-  idg=list(set(idg23).intersection(set(idg1)))
- # print len(idg),len(set(idg))  
-  lat,lon,time=[],[],[]
-  
-  for x in range(len(idg)):
-      lat.append(round(lat1[idg[x]],4))
-      lon.append(round(lon1[idg[x]],4))
-  maxlon=max(lon)
-  minlon=min(lon)
-  maxlat=max(lat)
-  minlat=min(lat)     
-  # time is num
-  return maxlon,minlon,maxlat,minlat
+  if not num:
+      return lat,lon,time
+  else:
+      maxlon=max(lon)
+      minlon=min(lon)
+      maxlat=max(lat)
+      minlat=min(lat)     
+      return maxlon,minlon,maxlat,minlat

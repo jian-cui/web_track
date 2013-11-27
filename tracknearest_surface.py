@@ -19,8 +19,8 @@ import sys
 print 'This routine reads a control file called ctrl_trackzoomin.csv'
 urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][27:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
-#TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
-TIME = datetime.now()
+TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
+#TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
@@ -63,7 +63,6 @@ la = float(input_with_default('lat', 4150.1086))
 lo = float(input_with_default('lon', 7005.7876))
 #############get the index of lat and lon???
 def nearlonlat(lon,lat,lonp,latp):
-    'there is a totally same fuction in web_surface.py.--JC'
     cp=np.cos(latp*np.pi/180.)
     # approximation for small distance
     dx=(lon-lonp)*cp
@@ -76,7 +75,7 @@ def nearlonlat(lon,lat,lonp,latp):
 
 
 if urlname=="massbay":
-#    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
+    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     now=datetime.now()
     if TIME>now:
          diff=(TIME-now).days

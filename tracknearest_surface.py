@@ -208,7 +208,6 @@ def axes_interval(x):
         n=0.01
     return n
 
-
 ###########save forecast in f[ID].dat file################
 def write_data(file_open, pointnum, TIME, latd, lond):
     time_trackpoints = [TIME]
@@ -249,7 +248,7 @@ m.plot(lon,lat,'r.',lonc,latc,'b+')
 fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
 '''
-plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
+#plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
 plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.show()
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
@@ -259,4 +258,3 @@ return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
 '''
-

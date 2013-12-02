@@ -1,3 +1,8 @@
 web_surface_gui.py:
 	add "click" and "zoomin" compared to "web_surface.py".
 	Two new improvements are similiar with "trackzoomin_verticalvelocity.py"
+tracknearest_surface.py:
+        save data into f[ID].dat file
+        add 'GOM3' model
+calc_sep_dist.py:
+        calculate the distance between the location forecasted and the real location and save the data.

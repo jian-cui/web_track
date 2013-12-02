@@ -58,9 +58,9 @@ def input_with_default(data, v_default):
     else:
         data_input = data_input
     return data_input
-ID = int(input_with_default('ID', 130410702))
-la = float(input_with_default('lat', 4150.1086))
-lo = float(input_with_default('lon', 7005.7876))
+ID = int(input_with_default('ID', 130400681))
+la = float(input_with_default('lat', 4015.497))
+lo = float(input_with_default('lon', 6901.6878))
 #############get the index of lat and lon???
 def nearlonlat(lon,lat,lonp,latp):
     cp=np.cos(latp*np.pi/180.)
@@ -74,7 +74,7 @@ def nearlonlat(lon,lat,lonp,latp):
     return i,min_dist
 
 
-if urlname=="massbay":
+if urlname=="massbay" or "GOM3":
     TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     now=datetime.now()
     if TIME>now:
@@ -109,6 +109,11 @@ if urlname=='30yr':
      startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24
      endrecord=startrecord+24*numdays
      url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+elif urlname == 'GOM3':
+     timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
+     startrecord=(timeperiod.seconds)/60/60
+     endrecord=startrecord+24*(new_numdays.days)
+     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 else:
      timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
      startrecord=(timeperiod.seconds)/60/60
@@ -162,9 +167,11 @@ for i in range(startrecord,endrecord):
                timeurl='['+str(i)+':1:'+str(i)+']'
                uvposition=str([layer])+str([kf])
                if urlname=="30yr":
-                       url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                   url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+               elif urlname == "GOM3":
+                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
                else:
-                       url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
 
                dataset = open_url(url)
                u=np.array(dataset['u'])

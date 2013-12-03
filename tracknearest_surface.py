@@ -19,8 +19,8 @@ import sys
 print 'This routine reads a control file called ctrl_trackzoomin.csv'
 urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][27:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
-#TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
-TIME = datetime.now()
+TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
+#TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
@@ -58,12 +58,11 @@ def input_with_default(data, v_default):
     else:
         data_input = data_input
     return data_input
-ID = int(input_with_default('ID', 130410702))
-la = float(input_with_default('lat', 4150.1086))
-lo = float(input_with_default('lon', 7005.7876))
+ID = int(input_with_default('ID', 130400681))
+la = float(input_with_default('lat', 4015.497))
+lo = float(input_with_default('lon', 6901.6878))
 #############get the index of lat and lon???
 def nearlonlat(lon,lat,lonp,latp):
-    'there is a totally same fuction in web_surface.py.--JC'
     cp=np.cos(latp*np.pi/180.)
     # approximation for small distance
     dx=(lon-lonp)*cp
@@ -75,8 +74,8 @@ def nearlonlat(lon,lat,lonp,latp):
     return i,min_dist
 
 
-if urlname=="massbay":
-#    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
+if urlname=="massbay" or "GOM3":
+    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     now=datetime.now()
     if TIME>now:
          diff=(TIME-now).days
@@ -110,6 +109,11 @@ if urlname=='30yr':
      startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24
      endrecord=startrecord+24*numdays
      url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+elif urlname == 'GOM3':
+     timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
+     startrecord=(timeperiod.seconds)/60/60
+     endrecord=startrecord+24*(new_numdays.days)
+     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 else:
      timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
      startrecord=(timeperiod.seconds)/60/60
@@ -150,6 +154,11 @@ latd,lond=[],[]
 
 kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
 kv,distanceV=nearlonlat(lon,lat,lo,la)
+
+if h[kv] < 0:
+    print 'Sorry, your position is on land, please try another point'
+    sys.exit()
+    
 depthtotal=siglay[:,kv]*h[kv]
 layer=np.argmin(abs(depthtotal-depth))
 
@@ -158,9 +167,11 @@ for i in range(startrecord,endrecord):
                timeurl='['+str(i)+':1:'+str(i)+']'
                uvposition=str([layer])+str([kf])
                if urlname=="30yr":
-                       url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                   url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+               elif urlname == "GOM3":
+                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
                else:
-                       url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
 
                dataset = open_url(url)
                u=np.array(dataset['u'])
@@ -196,7 +207,6 @@ def axes_interval(x):
     elif 0.01<abs(x)<=0.1:
         n=0.01
     return n
-
 
 ###########save forecast in f[ID].dat file################
 def write_data(file_open, pointnum, TIME, latd, lond):
@@ -238,7 +248,8 @@ m.plot(lon,lat,'r.',lonc,latc,'b+')
 fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
 '''
-plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
+#plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
+plt.annotate('Startpoint',xytext = (lond[0]+axes_interval(max(lond)-min(lond)), latd[0]+axes_interval(max(latd)-min(latd))), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
 plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.show()
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
@@ -248,4 +259,3 @@ return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
 '''
-

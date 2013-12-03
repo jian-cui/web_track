@@ -21,32 +21,32 @@ def getdrift_ids():
     print 'Note: It takes a minute or so to determine distinct ids'
     ids=list(set(list(dataset.drift_data.ID)))
     return ids
-    
+
 def getdrift(id):
     """
     uses pydap to get remotely stored drifter data given an id number
     """
     print 'using pydap'
     url = 'http://gisweb.wh.whoi.edu:8080/dods/whoi/drift_data'
-    
-    dataset = get_dataset(url) 
-     
+
+    dataset = get_dataset(url)
+
     try:
         lat = list(dataset.drift_data[dataset.drift_data.ID == id].LAT_DD)
     except:
         print 'Sorry, ' + id + ' is not available'
         sys.exit(0)
-        
+
     lon = list(dataset.drift_data[dataset.drift_data.ID == id].LON_DD)
     year_month_day = list(dataset.drift_data[dataset.drift_data.ID == id].TIME_GMT)
     yearday = list(dataset.drift_data[dataset.drift_data.ID == id].YRDAY0_GMT)
     dep = list(dataset.drift_data[dataset.drift_data.ID == id].DEPTH_I)
     datet = []
     # use time0('%Y-%m-%d) and yearday to calculate the datetime
-    for i in range(len(yearday)):      
+    for i in range(len(yearday)):
         #datet.append(num2date(yearday[i]).replace(year=time.strptime(time0[i], '%Y-%m-%d').tm_year).replace(day=time.strptime(time0[i], '%Y-%m-%d').tm_mday))
         datet.append(num2date(yearday[i]+1.0).replace(year=dt.datetime.strptime(year_month_day[i], '%Y-%m-%d').year).replace(month=dt.datetime.strptime(year_month_day[i],'%Y-%m-%d').month).replace(day=dt.datetime.strptime(year_month_day[i],'%Y-%m-%d').day).replace(tzinfo=None))
-    
+
     print 'Sorting drifter data by time'
     index = range(len(datet))
     index.sort(lambda x, y:cmp(datet[x], datet[y]))
@@ -56,9 +56,9 @@ def getdrift(id):
     lon = [lon[i] for i in index]
     dep=[dep[i] for i in index]
     return lat, lon, datet, dep
-    
+
 def getdrift_raw(filename,id3,interval,datetime_wanted):
-    
+
   # range_time is a number,unit by one day.  datetime_wanted format is num
   d=ml.load(filename)
   lat1=d[:,8]
@@ -84,7 +84,7 @@ def getdrift_raw(filename,id3,interval,datetime_wanted):
   idg=list(set(idg23).intersection(set(idg1)))
   print 'the length of drifter data is  '+str(len(idg)),str(len(set(idg)))+'   . if same, no duplicate'
   lat,lon,time=[],[],[]
-  
+
   for x in range(len(idg)):
       lat.append(round(lat1[idg[x]],4))
       lon.append(round(lon1[idg[x]],4))
@@ -93,11 +93,11 @@ def getdrift_raw(filename,id3,interval,datetime_wanted):
   return lat,lon,time
 
 def getdrift_raw_range_latlon(filename,id3,interval,datetime_wanted_1,num,step_size):
-    
+
 # this is for plot all the data in same range of lat and lon. id3 means int format of drift number
 #'interval' means range of time, 'num' means how many pictures we will get
   d=ml.load(filename)
-  
+
   lat1=d[:,8]
   lon1=d[:,7]
   idd=d[:,0]
@@ -119,15 +119,15 @@ def getdrift_raw_range_latlon(filename,id3,interval,datetime_wanted_1,num,step_s
   idg23=list(set(idg2).intersection(set(idg3)))
   # find which data we need
   idg=list(set(idg23).intersection(set(idg1)))
- # print len(idg),len(set(idg))  
+ # print len(idg),len(set(idg))
   lat,lon,time=[],[],[]
-  
+
   for x in range(len(idg)):
       lat.append(round(lat1[idg[x]],4))
       lon.append(round(lon1[idg[x]],4))
   maxlon=max(lon)
   minlon=min(lon)
   maxlat=max(lat)
-  minlat=min(lat)     
+  minlat=min(lat)
   # time is num
   return maxlon,minlon,maxlat,minlat

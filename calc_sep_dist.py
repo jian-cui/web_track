@@ -10,7 +10,7 @@ import time
 #from scipy import interpolate
 #import numpy as np
 #from pydap.client import open_url
-from urllib import urlopen  
+from urllib import urlopen
 
 def input_with_default(data, default):
     '''
@@ -74,7 +74,7 @@ def write_line(f, data):
     for word in data[1:]:
         line = line + ' ' + str(word)
     f.write(line + '\n')
-    
+
 def write_data(f, data, head = ''):
     if not len(f.read()):
         f.write(head + '\n')

@@ -242,9 +242,27 @@ extra_lon=[(max(lond)-min(lond))/10.]
 latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
 lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
 
-#def on_press(event):
-#    fig = plt.figure()
-#    m = Basemap()
+def on_press(event):
+    if event.button == 1:
+        x, y = event.xdata, event.ydata
+        print 'Your pressed: ', event.button, x, y
+        fig = plt.figure()
+        m = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
+          llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')#,fix_aspect=False)
+        #m.drawparallels(np.arange(round(min(latsize), 1),round(max(latsize)+1, 1),axes_interval(max(latd)-min(latd))),labels=[1,0,0,0])
+        m.drawparallels(np.arange(round(min(latsize)-1, 0),round(max(latsize)+1, 0),1),labels=[1,0,0,0])
+        m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),\
+                    axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
+        m.drawcoastlines()
+        m.fillcontinents(color='blue')
+        m.drawmapboundary()
+        plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+                     latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+                     arrowprops = dict(arrowstyle = 'simple'))
+        plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+    else:
+        print 'Please press left mouse button'
+        
 fig = plt.figure()
 m = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
   llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')#,fix_aspect=False)
@@ -255,6 +273,7 @@ m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),\
 m.drawcoastlines()
 m.fillcontinents(color='blue')
 m.drawmapboundary()
+surface_cid = fig.canvas.mpl_connect('button_press_event', on_press)
 #cid = fig.canvas.mpl_connect('button_press_event', on_press)
 '''
 m.plot(lon,lat,'r.',lonc,latc,'b+')
@@ -262,13 +281,13 @@ fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
 '''
 #plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
-plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
-             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
-             arrowprops = dict(arrowstyle = 'simple'))
-plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
-plt.show()
+#plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+#             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+#             arrowprops = dict(arrowstyle = 'simple'))
+#plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
 plt.savefig(urlname+'driftrack.png', dpi = 200)
+plt.show()
 '''
 return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)

@@ -130,7 +130,7 @@ def on_right_click(event):
         y = event.ydata
         pic_zoom_in(x, y)
     else:
-        print 'please press the map with right button'
+        print 'please click the map with right button'
     return True
 def on_left_click(event):
     if event.button == 1:
@@ -139,7 +139,7 @@ def on_left_click(event):
         y = event.ydata
         pic_trend(x, y)
     else:
-        print "Please press the map with left button"
+        print "Please click the map with left button"
     return True
 def pic_zoom_in(x,y):
     latsize=[y - 0.6,y + 0.6]

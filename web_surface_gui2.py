@@ -95,7 +95,8 @@ def rddate(TIME,numdays):
 def get_uv_web(time,layer):
     timeurl='['+str(time)+':1:'+str(time)+']'
     uvposition=str([layer])+'[0:1:90414]'
-    url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+    url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
+            'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
     dataset = open_url(url)
     utotal=np.array(dataset['u'])
     vtotal=np.array(dataset['v'])
@@ -158,7 +159,8 @@ def pic_trend(lond, latd):
     for i in range(startrecord,endrecord):
         timeurl = '['+str(i)+':1:'+str(i)+']'
         uvposition = str([0])+'[0:1:90414]' # this is the number of grid points in thie 30yr model
-        url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+        url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
+                  'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
         dataset = open_url(url)
         utotal=np.array(dataset['u'])
         vtotal=np.array(dataset['v'])
@@ -175,7 +177,7 @@ def pic_trend(lond, latd):
             break
     fig=plt.figure()     
     Q=plt.quiver(lont,latt,ufinal,vfinal,scale=5.)  
-    plt.show() 
+#    plt.show() 
 TIME='2003-01-08 00:00:00' 
 numdays=30 
 #lond=-67
@@ -196,13 +198,15 @@ m.drawmapboundary()
 '''
 startrecord,endrecord,stime=rddate(TIME,numdays)
 
-url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'lon,lat,latc,lonc,siglay,h,x,y,xc,yc,nv,nbe,nbsn,ntsn,nbve,ntve,Times['+str(startrecord)+':1:'+str(endrecord)+']'
+url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
+        'lon,lat,latc,lonc,siglay,h,x,y,xc,yc,nv,nbe,nbsn,ntsn,nbve,ntve,Times['+str(startrecord)+':1:'+str(endrecord)+']'
 lon,lat,latc,lonc,siglay,h,x,y,xc,yc,nv,nbe,nbsn,ntsn,nbve,ntve = \
     get_dataset(url,'lon','lat','latc','lonc','siglay','h','x','y','xc','yc','nv','nbe','nbsn','ntsn','nbve','ntve')
 #dataset = open_url(url)
 #latc = np.array(dataset['latc'])
 #lonc = np.array(dataset['lonc'])
-#lat = np.array(dataset['lat'])
+#lat = np.array(dataset['lat'])fig.canvas.mpl_connect(cid)
+
 #lon = np.array(dataset['lon'])
 #x=np.array(dataset['x'])
 #y=np.array(dataset['y'])
@@ -219,14 +223,15 @@ lon,lat,latc,lonc,siglay,h,x,y,xc,yc,nv,nbe,nbsn,ntsn,nbve,ntve = \
 coslat=np.cos(lat*np.pi/180.)
 coslatc=np.cos(latc*np.pi/180.)
 #################ready to process############################
-Grid={'x':x,'y':y,'xc':xc,'yc':yc,'lon':lon,'lat':lat,'lonc':lonc,'latc':latc,'coslat':coslat,'coslatc':coslatc,'kvf':nv,'kff':nbe,'kvv':nbsn,'nvv':ntsn,'kfv':nbve,'nfv':ntve}
+Grid={'x':x,'y':y,'xc':xc,'yc':yc,'lon':lon,'lat':lat,'lonc':lonc,'latc':latc, \
+      'coslat':coslat,'coslatc':coslatc,'kvf':nv,'kff':nbe,'kvv':nbsn,'nvv':ntsn,\
+      'kfv':nbve,'nfv':ntve}
 #kf=nearlonlat(lonc,latc,lond,latd) # nearest triangle center F - face
 ###########################draw the basic map############################################
 fig, m = draw_figure(lat, lon)
 m.plot(lon,lat,'r.',lonc,latc,'b+')
-
-plt.show()
 cid = fig.canvas.mpl_connect('button_press_event', on_right_click)
+plt.show()
 
 #latsize=[coor[0].y - 0.6, coor[0].y + 0.6]
 #lonsize=[coor[0].x - 0.6, coor[0].x + 0.6]

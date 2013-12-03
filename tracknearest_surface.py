@@ -108,17 +108,20 @@ if urlname=='30yr':
      timedeltaprocess=(stime-standardtime).days
      startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24
      endrecord=startrecord+24*numdays
-     url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+     url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
+         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 elif urlname == 'GOM3':
      timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
      startrecord=(timeperiod.seconds)/60/60
      endrecord=startrecord+24*(new_numdays.days)
-     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
+         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 else:
      timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
      startrecord=(timeperiod.seconds)/60/60
      endrecord=startrecord+24*(new_numdays.days)
-     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
+         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 dataset = open_url(url)
 latc = np.array(dataset['latc'])
 lonc = np.array(dataset['lonc'])
@@ -167,11 +170,14 @@ for i in range(startrecord,endrecord):
                timeurl='['+str(i)+':1:'+str(i)+']'
                uvposition=str([layer])+str([kf])
                if urlname=="30yr":
-                   url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                   url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
+                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
                elif urlname == "GOM3":
-                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
+                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
                else:
-                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
+                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
 
                dataset = open_url(url)
                u=np.array(dataset['u'])
@@ -235,21 +241,30 @@ extra_lat=[(max(latd)-min(latd))/10.]
 extra_lon=[(max(lond)-min(lond))/10.]
 latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
 lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
+
+#def on_press(event):
+#    fig = plt.figure()
+#    m = Basemap()
+fig = plt.figure()
 m = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
   llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')#,fix_aspect=False)
 #m.drawparallels(np.arange(round(min(latsize), 1),round(max(latsize)+1, 1),axes_interval(max(latd)-min(latd))),labels=[1,0,0,0])
 m.drawparallels(np.arange(round(min(latsize)-1, 0),round(max(latsize)+1, 0),1),labels=[1,0,0,0])
-m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
+m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),\
+                axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
 m.drawcoastlines()
 m.fillcontinents(color='blue')
 m.drawmapboundary()
+#cid = fig.canvas.mpl_connect('button_press_event', on_press)
 '''
 m.plot(lon,lat,'r.',lonc,latc,'b+')
 fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
 '''
 #plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
-plt.annotate('Startpoint',xytext = (lond[0]+axes_interval(max(lond)-min(lond)), latd[0]+axes_interval(max(latd)-min(latd))), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
+plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+             arrowprops = dict(arrowstyle = 'simple'))
 plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.show()
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))

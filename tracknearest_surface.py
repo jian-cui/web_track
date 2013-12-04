@@ -215,25 +215,25 @@ def axes_interval(x):
     return n
 
 ###########save forecast in f[ID].dat file################
-def write_data(file_open, pointnum, TIME, latd, lond):
+def write_data(file_opened, pointnum, TIME, latd, lond):
     time_trackpoints = [TIME]
     for i in range(pointnum):
         time_trackpoints.append(time_trackpoints[-1] + timedelta(hours=1))
         string = ('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n')
         something = (str(time_trackpoints[0]), str(time_trackpoints[-1]))
-        file_open.seek(0, 2)           #This line have to be added in Windows()
+        file_opened.seek(0, 2)           #This line have to be added in Windows()
 #        file_open.write(('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n') % (str(time_trackpoints[0]), str(time_trackpoints    1])))
-        file_open.write(string % something)
-
+        file_opened.write(string % something)
 pointnum = len(latd)
-f = open('f%s.dat' % ID,'a+')
-if len(f.read()) == 0:
-    f.write('startdate' + '  ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n')
-    write_data(f, pointnum, TIME, latd, lond)
-else:
-    write_data(f, pointnum, TIME, latd, lond)
-f.write('\n')
-f.close()
+def save_data(pointnum, TIME, lat, lond):
+    f = open('f%s.dat' % ID,'a+')
+    if len(f.read()) == 0:
+        f.write('startdate' + '  ' + 'date/time' + ' ' + 'lat' + ' ' + 'lon\n')
+        write_data(f, pointnum, TIME, latd, lond)
+    else:
+        write_data(f, pointnum, TIME, latd, lond)
+    f.write('\n')
+    f.close()
 
 ############draw pic########################
 #plt.figure()
@@ -242,38 +242,52 @@ extra_lon=[(max(lond)-min(lond))/10.]
 latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
 lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
 
-def on_press(event):
-    if event.button == 1:
-        x, y = event.xdata, event.ydata
-        print 'Your pressed: ', event.button, x, y
-        fig = plt.figure()
-        m = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
-          llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')#,fix_aspect=False)
-        #m.drawparallels(np.arange(round(min(latsize), 1),round(max(latsize)+1, 1),axes_interval(max(latd)-min(latd))),labels=[1,0,0,0])
-        m.drawparallels(np.arange(round(min(latsize)-1, 0),round(max(latsize)+1, 0),1),labels=[1,0,0,0])
-        m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),\
-                    axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
-        m.drawcoastlines()
-        m.fillcontinents(color='blue')
-        m.drawmapboundary()
-        plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
-                     latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
-                     arrowprops = dict(arrowstyle = 'simple'))
-        plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
-    else:
-        print 'Please press left mouse button'
-        
-fig = plt.figure()
-m = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
-  llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')#,fix_aspect=False)
-#m.drawparallels(np.arange(round(min(latsize), 1),round(max(latsize)+1, 1),axes_interval(max(latd)-min(latd))),labels=[1,0,0,0])
-m.drawparallels(np.arange(round(min(latsize)-1, 0),round(max(latsize)+1, 0),1),labels=[1,0,0,0])
-m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),\
-                axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
-m.drawcoastlines()
-m.fillcontinents(color='blue')
-m.drawmapboundary()
-surface_cid = fig.canvas.mpl_connect('button_press_event', on_press)
+#def on_press(event):
+#    if event.button == 1 and event.xdata != None and event.ydata != None:
+#        x, y = event.xdata, event.ydata
+#        print 'You clicked: ', event.button, x, y
+#        lat = [y - 0.6, y + 0.6]
+#        lon = [x + 0.6, x + 0.6]
+#        fig2, m2 = draw_figure(lat, lon)
+#        cid2 = fig2.canvas.mpl_connect('button_press_event', on_press2)
+#        plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+#                     latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+#                     arrowprops = dict(arrowstyle = 'simple'))
+#        plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+#    else:
+#        print 'Please press left mouse button in the map area'
+#def on_press2(event):
+#    if event.button == 1 and event.xdata != None and event.ydata != None:
+#        x, y = event.xdata, event.ydata
+#        print "You clicked: ", x, y
+#        
+#    else:
+#        print "Please press left mouse button in the map area"
+def draw_figure(latsize, lonsize):
+#    p = plt.figure(figsize = (7, 6))
+    p = plt.figure()
+    ax = p.add_subplot(111)
+    dmap = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
+            llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')
+    dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1,1),labels=[1,0,0,0])
+    dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1,1),labels=[0,0,0,1])
+    dmap.drawcoastlines()
+    dmap.fillcontinents(color='grey')
+    dmap.drawmapboundary()
+    return p,ax
+#fig = plt.figure()
+#m = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
+#  llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')#,fix_aspect=False)
+##m.drawparallels(np.arange(round(min(latsize)-1, 0),round(max(latsize)+1, 0),1),labels=[1,0,0,0])
+##m.drawmeridians(np.arange(round(min(lonsize)-1, 2),round(max(lonsize)+1, 2),\
+##                axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
+#m.drawparallels(np.arange(round(min(latsize), 0),round(max(latsize)+1, 0),1),labels=[1,0,0,0])
+#m.drawmeridians(np.arange(round(min(lonsize), 0),round(max(lonsize)+1, 0),\
+#                axes_interval(max(lond)-min(lond))),labels=[0,0,0,1])
+#m.drawcoastlines()
+#m.fillcontinents(color='blue')
+#m.drawmapboundary()
+fig,ax = draw_figure(latsize, lonsize)
 #cid = fig.canvas.mpl_connect('button_press_event', on_press)
 '''
 m.plot(lon,lat,'r.',lonc,latc,'b+')
@@ -281,10 +295,10 @@ fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
 '''
 #plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
-#plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
-#             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
-#             arrowprops = dict(arrowstyle = 'simple'))
-#plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+ax.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+             arrowprops = dict(arrowstyle = 'simple'))
+ax.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
 plt.savefig(urlname+'driftrack.png', dpi = 200)
 plt.show()

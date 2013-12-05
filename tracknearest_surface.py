@@ -22,6 +22,7 @@ depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 #TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
+
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
@@ -150,7 +151,7 @@ def onclick(event):
         plt.show()
         spoint = pylab.ginput(1)
         '''
-
+    
 if lo>90:
     [la,lo]=dm2dd(la,lo)
 latd,lond=[],[]

@@ -23,6 +23,7 @@ TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 #TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
+coors_get = open("ctrl_trackzoomin.csv", "r").readlines()[4][35:]
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
@@ -59,6 +60,7 @@ def input_with_default(data, v_default):
     else:
         data_input = data_input
     return data_input
+
 ID = int(input_with_default('ID', 130400681))
 #la = float(input_with_default('lat', 4015.497))
 #lo = float(input_with_default('lon', 6901.6878))
@@ -136,6 +138,7 @@ lat = np.array(dataset['lat'])
 lon = np.array(dataset['lon'])
 siglay=np.array(dataset['siglay'])
 h=np.array(dataset['h'])
+
 
 '''
 ###############################################################################
@@ -258,24 +261,13 @@ def on_press(event):
         lon = [x - 0.6,x + 0.6]
         fig2, m2 = draw_figure(lat, lon)
         cid2 = fig2.canvas.mpl_connect('button_press_event', on_press2)
-#        plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
-#                     latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
-#                     arrowprops = dict(arrowstyle = 'simple'))
-#        plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
     else:
         print 'Please press left mouse button in the map area'
 def on_press2(event):
     if event.button == 1 and event.xdata != None and event.ydata != None:
         x, y = event.xdata, event.ydata
         print "You clicked: ", x, y
-#        dataset = open_url(url)
-#        latc = np.array(dataset['latc'])
-#        lonc = np.array(dataset['lonc'])
-#        lat = np.array(dataset['lat'])
-#        lon = np.array(dataset['lon'])
-#        siglay=np.array(dataset['siglay'])
-#        h=np.array(dataset['h'])
-        latd, lond = get_coors(urlname, x, y, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord)
+        latd, lond = get_coors(urlname, x, y, lonc, latc, lon, lat, siglay, h, depth, startrecord, endrecord)
         pointnum = len(latd)
         save_data(pointnum, TIME, lat, lond)
         extra_lat=[(max(latd)-min(latd))/10.]
@@ -317,9 +309,9 @@ def draw_figure(latsize, lonsize):
 #m.drawcoastlines()
 #m.fillcontinents(color='blue')
 #m.drawmapboundary()
-fig1, m1 = draw_figure(lat, lon)
-cid1 = fig1.canvas.mpl_connect('button_press_event', on_press)
-#cid = fig.canvas.mpl_connect('button_press_event', on_press)
+
+#fig1, m1 = draw_figure(lat, lon)
+#cid1 = fig1.canvas.mpl_connect('button_press_event', on_press)
 '''
 m.plot(lon,lat,'r.',lonc,latc,'b+')
 fig=plt.figure(figsize=(7,6))
@@ -330,11 +322,41 @@ plt.plot(lon,lat,'r.',lonc,latc,'b+')
 #             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
 #             arrowprops = dict(arrowstyle = 'simple'))
 #plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
-plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
-plt.savefig(urlname+'driftrack.png', dpi = 200)
-plt.show()
+#plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
+#plt.savefig(urlname+'driftrack.png', dpi = 200)
+#plt.show()
 '''
 return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
 '''
+
+def draw_map_click():
+    fig1, m1 = draw_figure(lat,lon)
+    cid1 = fig1.canvas.mpl_connect('button_press_event', on_press)
+    plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
+    plt.savefig(urlname+'driftrack.png', dpi = 200)
+    plt.show()
+if coors_get == "input":
+    la = float(input_with_default('lat', 4015.497))
+    lo = float(input_with_default('lon', 6901.6878))
+    latd, lond = get_coors(urlname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord)
+    fig ,m = draw_figure()
+    pointnum = len(latd)
+    save_data(pointnum, TIME, latd, lond)
+    extra_lat=[(max(latd)-min(latd))/10.]
+    extra_lon=[(max(lond)-min(lond))/10.]
+    latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
+    lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
+    fig,ax = draw_figure(latsize, lonsize)
+    ax.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+                latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+                arrowprops = dict(arrowstyle = 'simple'))
+    ax.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+    plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
+    plt.savefig(urlname+'driftrack.png', dpi = 200)
+    plt.show()
+elif coors_get == "click":
+    draw_map_click()
+else:
+    print "Please check your control file if 'ways_get_coors' is right"

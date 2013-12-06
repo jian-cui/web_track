@@ -23,7 +23,7 @@ TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 #TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
-coors_get = open("ctrl_trackzoomin.csv", "r").readlines()[4][35:]
+coors_get = open("ctrl_trackzoomin.csv", "r").readlines()[4][35:-1]
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
@@ -338,10 +338,10 @@ def draw_map_click():
     plt.savefig(urlname+'driftrack.png', dpi = 200)
     plt.show()
 if coors_get == "input":
-    la = float(input_with_default('lat', 4015.497))
-    lo = float(input_with_default('lon', 6901.6878))
+    la = float(input_with_default('lat', 3934.4644))
+    lo = float(input_with_default('lon', 7031.8486))
     latd, lond = get_coors(urlname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord)
-    fig ,m = draw_figure()
+    fig ,m = draw_figure(latd, lond)
     pointnum = len(latd)
     save_data(pointnum, TIME, latd, lond)
     extra_lat=[(max(latd)-min(latd))/10.]
@@ -349,7 +349,7 @@ if coors_get == "input":
     latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
     lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
     fig,ax = draw_figure(latsize, lonsize)
-    ax.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+    plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
                 latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
                 arrowprops = dict(arrowstyle = 'simple'))
     ax.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
@@ -359,4 +359,4 @@ if coors_get == "input":
 elif coors_get == "click":
     draw_map_click()
 else:
-    print "Please check your control file if 'ways_get_coors' is right"
+    print "Please check your control file if 'ways_coors_get' is right"

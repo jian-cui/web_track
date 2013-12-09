@@ -17,7 +17,7 @@ import sys
 
 ######### HARDCODES ########
 print 'This routine reads a control file called ctrl_trackzoomin.csv'
-urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][27:-1]
+urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][37:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 #TIME = datetime.now()
@@ -99,7 +99,7 @@ def get_url(urlname, stime, new_numdays = None):
         url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
             'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
     return url, startrecord, endrecord
-    
+
 if urlname=="massbay" or "GOM3":
 #    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     now=datetime.now()
@@ -210,7 +210,7 @@ def get_coors(urlname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecor
                       print 'Sorry, your start position is NOT in the model domain'
                    break
     return latd ,lond
-    
+
 def axes_interval(x):
     n=0
     if 1<abs(x)<=10:
@@ -233,7 +233,7 @@ def write_data(file_opened, pointnum, TIME, latd, lond):
         file_opened.seek(0, 2)           #This line have to be added in Windows()
 #        file_open.write(('%s %s ' + str(latd[i]) + ' ' + str(lond[i]) + '\n') % (str(time_trackpoints[0]), str(time_trackpoints    1])))
         file_opened.write(string % something)
-        
+
 #pointnum = len(latd)
 
 def save_data(pointnum, TIME, latd, lond):
@@ -274,7 +274,7 @@ def on_press2(event):
         extra_lon=[(max(lond)-min(lond))/10.]
         latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
         lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
-        fig3, m3 = draw_figure(latsize, lonsize)
+        fig3, m3 = draw_figure(latsize, lonsize, interval_lat=axes_interval(max(latd)-min(latd)), interval_lon=axes_interval(max(lond)-min(lond)))
         plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
                      latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
                      arrowprops = dict(arrowstyle = 'simple'))
@@ -284,13 +284,13 @@ def on_press2(event):
         plt.show()
     else:
         print "Please press left mouse button in the map area"
-def draw_figure(latsize, lonsize):
+def draw_figure(latsize, lonsize, interval_lat = 1, interval_lon = 1):
 #    p = plt.figure(figsize = (7, 6))
     p = plt.figure()
     dmap = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
             llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')
-    dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1,1),labels=[1,0,0,0])
-    dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1,1),labels=[0,0,0,1])
+    dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1,interval_lat),labels=[1,0,0,0])
+    dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1,interval_lon),labels=[0,0,0,1])
     dmap.drawcoastlines()
     dmap.fillcontinents(color='grey')
     dmap.drawmapboundary()

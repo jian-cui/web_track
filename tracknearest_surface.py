@@ -17,7 +17,7 @@ import sys
 
 ######### HARDCODES ########
 print 'This routine reads a control file called ctrl_trackzoomin.csv'
-urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][27:-1]
+urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][37:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 #TIME = datetime.now()
@@ -151,7 +151,7 @@ def onclick(event):
         plt.show()
         spoint = pylab.ginput(1)
         '''
-    
+
 if lo>90:
     [la,lo]=dm2dd(la,lo)
 latd,lond=[],[]
@@ -162,7 +162,7 @@ kv,distanceV=nearlonlat(lon,lat,lo,la)
 if h[kv] < 0:
     print 'Sorry, your position is on land, please try another point'
     sys.exit()
-    
+
 depthtotal=siglay[:,kv]*h[kv]
 layer=np.argmin(abs(depthtotal-depth))
 
@@ -261,7 +261,7 @@ lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
 #    if event.button == 1 and event.xdata != None and event.ydata != None:
 #        x, y = event.xdata, event.ydata
 #        print "You clicked: ", x, y
-#        
+#
 #    else:
 #        print "Please press left mouse button in the map area"
 def draw_figure(latsize, lonsize):

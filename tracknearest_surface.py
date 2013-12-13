@@ -4,7 +4,7 @@ Created on Mon Jun 17 10:15:52 2013
 This toutine reads a control file called ctrl_trackzoomin.csv
 @author: jmanning
 """
-
+import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import numpy as np
@@ -74,8 +74,19 @@ def nearlonlat(lon,lat,lonp,latp):
     min_dist=np.sqrt(dist2[i])
     return i,min_dist
 
+#def dist(lon,lat,lonp,latp):
+#    r = 6378.1
+#    dist = 2 * (r *2) * (1 - np.cos(lat)*np.cos(latp)*np.cos(lon-lonp) + \
+#                        np.sin(lat)*np.sin(latp))
+#    return dist
+#    
+#def nearestdist(lon,lat,lonp,latp):
+#    dist = dist(lon,lat,lonp,latp)
+#    i = np.argmin(dist)
+#    min_dist = np.sqrt(dist[i])
+#    return i,min_dist
 
-if urlname=="massbay" or "GOM3":
+if urlname=="massbay" or urlname=="GOM3":
     TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     now=datetime.now()
     if TIME>now:
@@ -107,10 +118,12 @@ if urlname=='30yr':
      timesnum=stime.year-1981
      standardtime=datetime.strptime(str(stime.year)+'-01-01 00:00:00', "%Y-%m-%d %H:%M:%S")
      timedeltaprocess=(stime-standardtime).days
-     startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24
+     startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24 # note: 26340 is the model time index for Jan 1, 1981
      endrecord=startrecord+24*numdays
+#     url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
+#         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
      url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
-         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+         'lon,lat,latc,lonc,siglay,h'
 elif urlname == 'GOM3':
      timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
      startrecord=(timeperiod.seconds)/60/60
@@ -180,9 +193,9 @@ for i in range(startrecord,endrecord):
                    url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
                        'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
 
-               dataset = open_url(url)
-               u=np.array(dataset['u'])
-               v=np.array(dataset['v'])
+               datasetuv = open_url(url)
+               u=np.array(datasetuv['u'])
+               v=np.array(datasetuv['v'])
 ################get the point according the position###################
 #               print kf,u[0,0,0],v[0,0,0],layer
                par_u=u[0,0,0]

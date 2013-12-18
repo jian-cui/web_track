@@ -22,7 +22,7 @@ depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 #TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
-
+TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
@@ -86,18 +86,17 @@ def nearlonlat(lon,lat,lonp,latp):
 #    min_dist = np.sqrt(dist[i])
 #    return i,min_dist
 
-if urlname=="massbay" or urlname=="GOM3":
-    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
-    now=datetime.now()
-    if TIME>now:
-         diff=(TIME-now).days
+def days3_judge(TIME):
+    date_now=datetime.now().date()
+    if TIME>date_now:
+         diff=(TIME-date_now).days
     else:
-         diff=(now-TIME).days
+         diff=(date_now-TIME).days
     if diff>3:
 #        print "please check your input start time,within 3 days both side form now on"
         sys.exit("please check your input start time,within 3 days both side form now on")
     new_numdays=timedelta(days=numdays)
-    if TIME+new_numdays>now+timedelta(days=3):
+    if TIME+new_numdays>date_now+timedelta(days=3):
         print "please check your numday.access period is between [now-3days,now+3days]"
         sys.exit(0)
 
@@ -113,29 +112,32 @@ m.drawcoastlines()
 m.fillcontinents(color='grey')
 m.drawmapboundary()
 '''
+def record_range(TIME, new_numdays, date_now):
+    timeperiod=(TIME+new_numdays)-(date_now-timedelta(days=3))
+    startrecord=(timeperiod.seconds)/60/60
+    endrecord=startrecord+24*(new_numdays.days)
+    return startrecord, endrecord
 if urlname=='30yr':
-     stime=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
-     timesnum=stime.year-1981
-     standardtime=datetime.strptime(str(stime.year)+'-01-01 00:00:00', "%Y-%m-%d %H:%M:%S")
-     timedeltaprocess=(stime-standardtime).days
-     startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24 # note: 26340 is the model time index for Jan 1, 1981
-     endrecord=startrecord+24*numdays
-#     url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
-#         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
-     url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
-         'lon,lat,latc,lonc,siglay,h'
+#    stime=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
+    timesnum=TIME.year-1981
+    standardtime=datetime.strptime(str(TIME.year)+'-01-01 00:00:00', "%Y-%m-%d %H:%M:%S")
+    timedeltaprocess=(TIME-standardtime).days
+    startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24 # note: 26340 is the model time index for Jan 1, 1981
+    endrecord=startrecord+24*numdays
+#    url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
+#        'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+    url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
+        'lon,lat,latc,lonc,siglay,h'
 elif urlname == 'GOM3':
-     timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
-     startrecord=(timeperiod.seconds)/60/60
-     endrecord=startrecord+24*(new_numdays.days)
-     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
-         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
-else:
-     timeperiod=(TIME+new_numdays)-(now-timedelta(days=3))
-     startrecord=(timeperiod.seconds)/60/60
-     endrecord=startrecord+24*(new_numdays.days)
-     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
-         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+    days3_judge(TIME)
+    startrecord, endrecord = record_range(TIME, new_numdays, datetime.now().date())
+    url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
+        'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+elif urlname == 'massbay':
+    days3_judge(TIME)
+    startrecord, endrecord = record_range(TIME, new_numdays, datetime.now().date())
+    url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
+        'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 dataset = open_url(url)
 latc = np.array(dataset['latc'])
 lonc = np.array(dataset['lonc'])
@@ -185,18 +187,21 @@ for i in range(startrecord,endrecord):
                uvposition=str([layer])+str([kf])
                if urlname=="30yr":
                    url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
-                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                       'Times'+timeurl+',u'+timeurl+uvposition+',' + \
+                       'v'+timeurl+uvposition
                elif urlname == "GOM3":
                    url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
-                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                       'Times'+timeurl+',u'+timeurl+uvposition+',' + \
+                       'v'+timeurl+uvposition
                else:
                    url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
-                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+                       'Times'+timeurl+',u'+timeurl+uvposition+',' + \
+                       'v'+timeurl+uvposition
 
                datasetuv = open_url(url)
                u=np.array(datasetuv['u'])
                v=np.array(datasetuv['v'])
-################get the point according the position###################
+################get the point according the position###################min(lonsize)
 #               print kf,u[0,0,0],v[0,0,0],layer
                par_u=u[0,0,0]
                par_v=v[0,0,0]
@@ -216,6 +221,7 @@ for i in range(startrecord,endrecord):
                    if i==startrecord:
                       print 'Sorry, your start position is NOT in the model domain'
                    break
+
 def axes_interval(x):
     n=0
     if 1<abs(x)<=10:
@@ -309,8 +315,21 @@ fig=plt.figure(figsize=(7,6))
 plt.plot(lon,lat,'r.',lonc,latc,'b+')
 '''
 #plt.annotate('Startpoint',xytext = (lond[0]+0.01, latd[0]), xy = (lond[0] ,latd[0]), arrowprops = dict(arrowstyle = 'simple'))
-ax.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
-             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+#ax.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
+#             latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+#             arrowprops = dict(arrowstyle = 'simple'))
+def dist_comp(v, v1, v2):
+    """
+    compare the distance from v to v1 and v2, return the nearer one.
+    """
+    d1 = v1 - v
+    d2 = v2 - v
+    if abs(d1) > abs(d2):
+        return d2
+    else:
+        return d1
+ax.annotate('Startpoint',xytext=(lond[0]+.5*dist_comp(lond[0], lonsize[0], lonsize[1]),\
+             latd[0]+.5*dist_comp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),\
              arrowprops = dict(arrowstyle = 'simple'))
 ax.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
 plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))

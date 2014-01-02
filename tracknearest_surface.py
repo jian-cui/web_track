@@ -23,6 +23,8 @@ TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
 #TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
+new_numdays=timedelta(days=numdays)
+datetime_today = datetime.now().replace(hour=0, minute=0, second=0,microsecond=0)
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
@@ -79,24 +81,28 @@ def nearlonlat(lon,lat,lonp,latp):
 #    dist = 2 * (r *2) * (1 - np.cos(lat)*np.cos(latp)*np.cos(lon-lonp) + \
 #                        np.sin(lat)*np.sin(latp))
 #    return dist
-#    
+#
 #def nearestdist(lon,lat,lonp,latp):
 #    dist = dist(lon,lat,lonp,latp)
 #    i = np.argmin(dist)
 #    min_dist = np.sqrt(dist[i])
 #    return i,min_dist
 
-def days3_judge(TIME):
-    date_now=datetime.now().date()
-    if TIME>date_now:
-         diff=(TIME-date_now).days
+def days3_judge(TIME, days):
+    '''
+    when model is massbay or GOM3, judge if the time user input is in and before 3 days
+    -TIME: startime
+    -days: days = timedelta(days=numdays)
+    '''
+    # date_today = datetime.now().replace(hour=0, minute=0, second=0,microsecond=0)
+    if TIME>datetime_today:
+        diff=(TIME-datetime_today).days
     else:
-         diff=(date_now-TIME).days
+        diff=(datetime_today-TIME).days
     if diff>3:
 #        print "please check your input start time,within 3 days both side form now on"
         sys.exit("please check your input start time,within 3 days both side form now on")
-    new_numdays=timedelta(days=numdays)
-    if TIME+new_numdays>date_now+timedelta(days=3):
+    if TIME+days>datetime_today+timedelta(days=3):
         print "please check your numday.access period is between [now-3days,now+3days]"
         sys.exit(0)
 
@@ -129,13 +135,13 @@ if urlname=='30yr':
     url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
         'lon,lat,latc,lonc,siglay,h'
 elif urlname == 'GOM3':
-    days3_judge(TIME)
-    startrecord, endrecord = record_range(TIME, new_numdays, datetime.now().date())
+    days3_judge(TIME, new_numdays)
+    startrecord, endrecord = record_range(TIME, new_numdays, datetime_today)
     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 elif urlname == 'massbay':
-    days3_judge(TIME)
-    startrecord, endrecord = record_range(TIME, new_numdays, datetime.now().date())
+    days3_judge(TIME, new_numdays)
+    startrecord, endrecord = record_range(TIME, new_numdays, datetime_today)
     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
 dataset = open_url(url)

@@ -92,7 +92,7 @@ def get_url(urlname, stime, new_numdays = None):
         endrecord=startrecord+24*(new_numdays.days)
         url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
             'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
-    else:
+    elif urlname == 'massbay':
         timeperiod=(TIME+new_numdays)-(datetime.now()-timedelta(days=3))
         startrecord=(timeperiod.seconds)/60/60
         endrecord=startrecord+24*(new_numdays.days)
@@ -275,8 +275,8 @@ def on_press2(event):
         latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
         lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
         fig3, m3 = draw_figure(latsize, lonsize, interval_lat=axes_interval(max(latd)-min(latd)), interval_lon=axes_interval(max(lond)-min(lond)))
-        plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
-                     latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+        plt.annotate('Startpoint',xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], londsize[1]),\
+                     latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),\
                      arrowprops = dict(arrowstyle = 'simple'))
         plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
         plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
@@ -330,7 +330,16 @@ return True
 cid= fig.canvas.mpl_connect('button_press_event', onclick)
 plt.show()
 '''
-
+def dist_cmp(v, v1, v2):
+    """
+    compare the distance from v to v1 and v2, return the nearer one.
+    """
+    d1 = v1 - v
+    d2 = v2 - v
+    if abs(d1) > abs(d2):
+        return d2
+    else:
+        return d1
 def draw_map_click():
     fig1, m1 = draw_figure(lat,lon)
     cid1 = fig1.canvas.mpl_connect('button_press_event', on_press)
@@ -349,8 +358,8 @@ if coors_get == "input":
     latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
     lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
     fig,ax = draw_figure(latsize, lonsize)
-    plt.annotate('Startpoint',xytext=(lond[0]+axes_interval(max(lond)-min(lond)),\
-                latd[0]+axes_interval(max(latd)-min(latd))),xy=(lond[0] ,latd[0]),\
+    plt.annotate('Startpoint',xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),\
+                latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),\
                 arrowprops = dict(arrowstyle = 'simple'))
     ax.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
     plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))

@@ -123,7 +123,7 @@ def record_range(TIME, new_numdays, date_now):
     startrecord=(timeperiod.seconds)/60/60
     endrecord=startrecord+24*(new_numdays.days)
     return startrecord, endrecord
-if urlname=='30yr':
+if urlname == '30yr':
 #    stime=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     timesnum=TIME.year-1981
     standardtime=datetime.strptime(str(TIME.year)+'-01-01 00:00:00', "%Y-%m-%d %H:%M:%S")
@@ -144,6 +144,8 @@ elif urlname == 'massbay':
     startrecord, endrecord = record_range(TIME, new_numdays, datetime_today)
     url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
         'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
+
+    
 dataset = open_url(url)
 latc = np.array(dataset['latc'])
 lonc = np.array(dataset['lonc'])
@@ -191,18 +193,15 @@ for i in range(startrecord,endrecord):
 ############read the particular time model from website#########
                timeurl='['+str(i)+':1:'+str(i)+']'
                uvposition=str([layer])+str([kf])
-               if urlname=="30yr":
+               if urlname == "30yr":
                    url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
-                       'Times'+timeurl+',u'+timeurl+uvposition+',' + \
-                       'v'+timeurl+uvposition
+                       'Times'+timeurl + ',u' + timeurl + uvposition + ',' + 'v'+timeurl+uvposition
                elif urlname == "GOM3":
                    url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
-                       'Times'+timeurl+',u'+timeurl+uvposition+',' + \
-                       'v'+timeurl+uvposition
-               else:
+                       'Times'+timeurl + ',u' + timeurl + uvposition + ',' + 'v'+timeurl+uvposition
+               elif urlname == "massbay":
                    url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
-                       'Times'+timeurl+',u'+timeurl+uvposition+',' + \
-                       'v'+timeurl+uvposition
+                       'Times'+timeurl + ',u' + timeurl + uvposition + ',' + 'v'+timeurl+uvposition
 
                datasetuv = open_url(url)
                u=np.array(datasetuv['u'])

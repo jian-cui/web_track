@@ -13,7 +13,7 @@ from datetime import datetime,timedelta
 
 scale = 0.03
 isub = 2
-tidx = -1
+tidx = -1  # to input in which day you want to forecast(third day is -1, second day is -2,first day is -3)
 url = 'http://tds.marine.rutgers.edu/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd'
 
 def shrink(a,b):
@@ -85,7 +85,11 @@ mask = nc.variables['mask_rho'][:]
 lon_rho = nc.variables['lon_rho'][:]
 lat_rho = nc.variables['lat_rho'][:]
 time = nc.variables['time'][:]
-dt=datetime(2013,5,19,12,0,0)+timedelta(hours=time)
+
+dt = []
+for i in range(len(time)):
+    dt.append(datetime(2013,5,19,12,0,0)+timedelta(hours=time[i]))
+
 u = nc.variables['u'][tidx, -1, :, :]
 v = nc.variables['v'][tidx, -1, :, :]
 

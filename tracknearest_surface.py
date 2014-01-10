@@ -95,16 +95,8 @@ def days3_judge(TIME, days):
     -days: days = timedelta(days=numdays)
     '''
     # date_today = datetime.now().replace(hour=0, minute=0, second=0,microsecond=0)
-    if TIME>datetime_today:
-        diff=(TIME-datetime_today).days
-    else:
-        diff=(datetime_today-TIME).days
-    if diff>3:
-#        print "please check your input start time,within 3 days both side form now on"
-        sys.exit("please check your input start time,within 3 days both side form now on")
-    if TIME+days>datetime_today+timedelta(days=3):
-        print "please check your numday.access period is between [now-3days,now+3days]"
-        sys.exit(0)
+    if TIME+days>datetime_today+timedelta(days=3) or TIME-days<datetime_today+timedelta(days=3):
+        sys.exit("please check your numday.access period is in [now-3days,now+3days]")
 
 #latsize=[39,45]
 #lonsize=[-72.,-66]
@@ -292,7 +284,7 @@ def draw_figure(latsize, lonsize):
 #    p = plt.figure(figsize = (7, 6))
     p = plt.figure()
     ax = p.add_subplot(111)
-    dmap = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
+    dmap = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,
             llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')
     dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1,1),labels=[1,0,0,0])
     dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1,1),labels=[0,0,0,1])
@@ -325,7 +317,7 @@ plt.plot(lon,lat,'r.',lonc,latc,'b+')
 #             arrowprops = dict(arrowstyle = 'simple'))
 def dist_comp(v, v1, v2):
     """
-    compare the distance from v to v1 and v2, return the nearer one.
+    compare the distance from v to v1 or v2, return the nearer one.
     """
     d1 = v1 - v
     d2 = v2 - v

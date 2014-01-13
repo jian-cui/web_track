@@ -15,7 +15,8 @@ from datetime import timedelta
 from conversions import dm2dd
 import sys
 
-
+#class figure_map(figure):
+    
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
@@ -39,7 +40,6 @@ import sys
 #else:
 #    isNum(lo)
 #    lo = float()
-
 
 def input_with_default(data, v_default):
     '''
@@ -151,7 +151,7 @@ def url_with_time_positon(modelname, data):
     '''
     Get the data you want from certain model.
     
-    model_name is the name of model, string.
+    modelname is the name of model, string.
     data stores the data wanted to get from web could be an array or a tuple.
     
     example of 'data'(Get u):
@@ -195,7 +195,7 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
 #               else:
 #                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
 #                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-               url = url_with_time_positon(model_name, data_want)
+               url = url_with_time_positon(modelname, data_want)
                dataset = open_url(url)
                u=np.array(dataset['u'])
                v=np.array(dataset['v'])
@@ -254,17 +254,20 @@ def save_data(pointnum, TIME, latd, lond):
     f.write('\n')
     f.close()
 def on_left_click_zoomin(event):
-    if event.button == 1 and event.xdata != None and event.ydata != None:
+    if event.button == 1 and event.xdata and event.ydata:
         x, y = event.xdata, event.ydata
         print 'You clicked: ', event.button, x, y
         lat = [y - 0.6,y + 0.6]
         lon = [x - 0.6,x + 0.6]
-        fig2, m2 = draw_figure(lat, lon)
-        cid2 = fig2.canvas.mpl_connect('button_press_event', on_press2)
-    else:
-        print 'Please press left mouse button in the map area'
-def on_press2(event):
-    if event.button == 1 and event.xdata != None and event.ydata != None:
+        fig, ax = draw_figure(lat, lon)
+#        fig = plt.figure()
+#        ax = plt.add_subplot(111)
+        fig.canvas.mpl_connect('button_press_event', on_left_click_show)
+        fig.show()
+#    else:
+#        print 'Please press left mouse button in the map area1'
+def on_left_click_show(event):
+    if event.button == 1 and event.xdata and event.ydata:
         x, y = event.xdata, event.ydata
         print "You clicked: ", x, y
         latd, lond = get_coors(modelname, x, y, lonc, latc, lon, lat, siglay, h, depth, startrecord, endrecord)
@@ -274,20 +277,23 @@ def on_press2(event):
         extra_lon=[(max(lond)-min(lond))/10.]
         latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
         lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
-        fig3, m3 = draw_figure(latsize, lonsize, interval_lat=axes_interval(max(latd)-min(latd)),
+        fig, ax = draw_figure(latsize, lonsize, interval_lat=axes_interval(max(latd)-min(latd)),
                                interval_lon=axes_interval(max(lond)-min(lond)))
-        plt.annotate('Startpoint',xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], londsize[1]),\
-                     latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),\
-                     arrowprops = dict(arrowstyle = 'simple'))
-        plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
-        plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
-        plt.savefig(modelname+'driftrack.png', dpi = 200)
+        xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]), latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1]))
+        ax.annotate('Startpoint',xytext,xy=(lond[0] ,latd[0]),arrowprops = dict(arrowstyle = 'simple'))
+        ax.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+        fig.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
+        fig.savefig(modelname+'driftrack.png', dpi = 200)
         plt.show()
-    else:
-        print "Please press left mouse button in the map area"
+#    else:
+#        print "Please press left mouse button in the map area2"
 def draw_figure(latsize, lonsize, interval_lat = 1, interval_lon = 1):
+    '''
+    draw the Basemap
+    '''
 #    p = plt.figure(figsize = (7, 6))
-    p = plt.figure()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
     dmap = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
             llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')
     dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1,interval_lat),labels=[1,0,0,0])
@@ -295,7 +301,7 @@ def draw_figure(latsize, lonsize, interval_lat = 1, interval_lon = 1):
     dmap.drawcoastlines()
     dmap.fillcontinents(color='grey')
     dmap.drawmapboundary()
-    return p,dmap
+    return fig, ax
 
 def dist_cmp(v, v1, v2):
     """
@@ -353,25 +359,25 @@ if methods_get_startpoint == "input":
     la = float(input_with_default('lat', 3934.4644))
     lo = float(input_with_default('lon', 7031.8486))
     latd, lond = get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord)
-    fig ,m = draw_figure(latd, lond)
+    fig1, ax1 = draw_figure(latd, lond)
     pointnum = len(latd)
     save_data(pointnum, TIME, latd, lond)
     extra_lat=[(max(latd)-min(latd))/10.]
     extra_lon=[(max(lond)-min(lond))/10.]
     latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
     lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
-    fig,ax = draw_figure(latsize, lonsize)
+    fig2, ax2 = draw_figure(latsize, lonsize)
     plt.annotate('Startpoint',xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
                 latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),
                 arrowprops = dict(arrowstyle = 'simple'))
-    ax.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+    ax2.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
     plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
     plt.savefig(modelname+'driftrack.png', dpi = 200)
     plt.show()
 elif methods_get_startpoint == "click":
 #    draw_map_click()
-    fig1, m1 = draw_figure(lat,lon)
-    cid1 = fig1.canvas.mpl_connect('button_press_event', on_left_click_zoomin)
+    fig, ax = draw_figure(lat,lon)
+    cid1 = fig.canvas.mpl_connect('button_press_event', on_left_click_zoomin)
     plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
     plt.savefig(modelname+'driftrack.png', dpi = 200)
     plt.show()

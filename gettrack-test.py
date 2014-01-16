@@ -262,33 +262,57 @@ def on_left_click_zoomin(event):
         fig, ax = draw_figure(lat, lon)
 #        fig = plt.figure()
 #        ax = plt.add_subplot(111)
+        plt.title('zoomin figure')
         fig.canvas.mpl_connect('button_press_event', on_left_click_show)
         fig.show()
 #    else:
 #        print 'Please press left mouse button in the map area1'
-def on_left_click_show(event):
+#def on_left_click_show(event):
+#    if event.button == 1 and event.xdata and event.ydata:
+#        x, y = event.xdata, event.ydata
+#        print "You clicked: ", x, y
+#        latd, lond = get_coors(modelname, x, y, lonc, latc, lon, lat, siglay, h, depth, startrecord, endrecord)
+#        pointnum = len(latd)
+#        save_data(pointnum, TIME, lat, lond)
+#        extra_lat=(max(latd)-min(latd))/10.
+#        extra_lon=(max(lond)-min(lond))/10.
+#        latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
+#        lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
+#        fig, ax = draw_figure(latsize, lonsize, interval_lat=axes_interval(max(latd)-min(latd)),interval_lon=axes_interval(max(lond)-min(lond)))
+#        xy = (lond[0] ,latd[0])
+#        xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]), latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1]))
+#        plt.annotate('Startpoint', xy, xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
+#                     latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),
+#                     arrowprops = dict(arrowstyle = 'simple'))
+#        plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+#        plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
+#        plt.savefig(modelname+'driftrack.png', dpi = 200)
+#        plt.show()
+#    else:
+#        print "Please press left mouse button in the map area2"
+def on_left_button_down(event):
     if event.button == 1 and event.xdata and event.ydata:
         x, y = event.xdata, event.ydata
         print "You clicked: ", x, y
-        latd, lond = get_coors(modelname, x, y, lonc, latc, lon, lat, siglay, h, depth, startrecord, endrecord)
-        pointnum = len(latd)
-        save_data(pointnum, TIME, lat, lond)
-        extra_lat=(max(latd)-min(latd))/10.
-        extra_lon=(max(lond)-min(lond))/10.
-        latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
-        lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
-        fig, ax = draw_figure(latsize, lonsize, interval_lat=axes_interval(max(latd)-min(latd)),interval_lon=axes_interval(max(lond)-min(lond)))
-        xy = (lond[0] ,latd[0])
-        xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]), latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1]))
-        plt.annotate('Startpoint', xy, xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
-                     latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),
-                     arrowprops = dict(arrowstyle = 'simple'))
-        plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
-        plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
-        plt.savefig(modelname+'driftrack.png', dpi = 200)
-        plt.show()
-#    else:
-#        print "Please press left mouse button in the map area2"
+        if ax.title.get_text() == 'zoomin figure':
+            latd, lond = get_coors(modelname, x, y, lonc, latc, lon, lat, siglay, h, depth, startrecord, endrecord)
+            pointnum = len(latd)
+            save_data(pointnum, TIME, lat, lond)
+            extra_lat=(max(latd)-min(latd))/10.
+            extra_lon=(max(lond)-min(lond))/10.
+            latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
+            lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
+            fig, ax = draw_figure(latsize, lonsize, interval_lat=axes_interval(max(latd)-min(latd)),interval_lon=axes_interval(max(lond)-min(lond)))
+            xy = (lond[0] ,latd[0])
+            xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]), latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1]))
+            plt.annotate('Startpoint', xy, xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
+                         latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),
+                         arrowprops = dict(arrowstyle = 'simple')0)
+            plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
+            plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
+            plt.savefig(modelname+'driftrack.png', dpi = 200)
+            plt.show()
+        if ax-title.get_text() == ''
 def draw_figure(latsize, lonsize, interval_lat = 1, interval_lon = 1):
     '''
     draw the Basemap
@@ -325,7 +349,6 @@ print 'This routine reads a control file called ctrl_trackzoomin.csv'
 modelname=open("ctrl_trackzoomin.csv", "r").readlines()[0][37:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
-#TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
 methods_get_startpoint = open("ctrl_trackzoomin.csv", "r").readlines()[4][35:-1]

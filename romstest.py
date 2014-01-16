@@ -6,10 +6,12 @@ Created on Thu Jan  2 11:17:40 2014
 """
 
 import matplotlib.pyplot as plt
+from matplotlib import path
 import netCDF4
 from mpl_toolkits.basemap import Basemap
 import numpy as np
 from datetime import datetime,timedelta
+
 
 scale = 0.03
 isub = 2
@@ -71,7 +73,6 @@ def shrink(a,b):
                 if (a.shape[0] - dim) == 1:  # or average adjacent cells
                     a = 0.5*(a[1:,:] + a[:-1,:])
             a = a.swapaxes(0,dim_idx)        # swap working dim back
-
     return a
 
 def rot2d(x, y, ang):
@@ -79,17 +80,51 @@ def rot2d(x, y, ang):
     xr = x*np.cos(ang) - y*np.sin(ang)
     yr = x*np.sin(ang) + y*np.cos(ang)
     return xr, yr
+def bbox2ij(lon, lat, bbox):
+    """Return indices for i,j that will completely cover the specified bounding box.     
+    i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)
+    lon,lat = 2D arrays that are the target of the subset
+    bbox = list containing the bounding box: [lon_min, lon_max, lat_min, lat_max]
 
+    Example
+    -------  
+    >>> i0,i1,j0,j1 = bbox2ij(lat_rho,lon_rho,[-71, -63., 39., 46])
+    >>> h_subset = nc.variables['h'][j0:j1,i0:i1]       
+    """
+    bbox = np.array(bbox)
+    mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
+    p = path.Path(mypath)
+    points = np.vstack((lon.flatten(),lat.flatten())).T   
+    n,m = np.shape(lon)
+    inside = p.contains_points(points).reshape((n,m))
+    ii,jj = np.meshgrid(xrange(m),xrange(n))
+    return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
+def nearest_lonlat(lon, lat, lats, lons, length=(.05, .07)):
+    bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
+    i0, i1, j0, j1 = bbox2ij(lats, lons, bbox)
+    lon_convered = lons[j0:j1, i0:i1]
+    lat_convered = lats[j0:j1, i0:i1]
+    cp = np.cos(latp*np.pi/180.)
+    dx=(lon-lon_convered)*cp
+    dy=lat-lat_convered
+    dist=dx*dx+dy*dy
+    i=np.argmin(dist)
+    min_dist=np.sqrt(dist[i])
+    return lon_convered[i], lat_convered[i]
+    
 nc = netCDF4.Dataset(url)
 mask = nc.variables['mask_rho'][:]
 lon_rho = nc.variables['lon_rho'][:]
 lat_rho = nc.variables['lat_rho'][:]
 time = nc.variables['time'][:]
+u = nc.variables['u'][:, -1]
+v = nc.variables['v'][:, -1]
 
 dt = []
 for i in range(len(time)):
     dt.append(datetime(2013,5,19,12,0,0)+timedelta(hours=time[i]))
-
+for i in np.arange(start, end):
+    
 u = nc.variables['u'][tidx, -1, :, :]
 v = nc.variables['v'][tidx, -1, :, :]
 

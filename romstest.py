@@ -12,12 +12,12 @@ from mpl_toolkits.basemap import Basemap
 import numpy as np
 from datetime import datetime,timedelta
 
-
 scale = 0.03
 isub = 2
 tidx = -1  # to input in which day you want to forecast(third day is -1, second day is -2,first day is -3)
 url = 'http://tds.marine.rutgers.edu/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd'
-
+lon = -75.80
+lat = 33.75
 def shrink(a,b):
     """Return array shrunk to fit a specified shape by triming or averaging.
     
@@ -74,7 +74,6 @@ def shrink(a,b):
                     a = 0.5*(a[1:,:] + a[:-1,:])
             a = a.swapaxes(0,dim_idx)        # swap working dim back
     return a
-
 def rot2d(x, y, ang):
     '''rotate vectors by geometric angle'''
     xr = x*np.cos(ang) - y*np.sin(ang)
@@ -99,18 +98,26 @@ def bbox2ij(lon, lat, bbox):
     inside = p.contains_points(points).reshape((n,m))
     ii,jj = np.meshgrid(xrange(m),xrange(n))
     return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
-def nearest_lonlat(lon, lat, lats, lons, length=(.05, .07)):
+def nearest_point_index(lon, lat, lats, lons, length=(.05, .07)):
+    '''
+    Return the index of the nearest rho point.
+    lon, lat: the coordiation of original point
+    lats, lons: the coordiation of points want to be calculated.
+    length: the boundary box.
+    '''
     bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
-    i0, i1, j0, j1 = bbox2ij(lats, lons, bbox)
-    lon_convered = lons[j0:j1, i0:i1]
-    lat_convered = lats[j0:j1, i0:i1]
+    i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
+    lon_convered = lons[j0:j1+1, i0:i1+1]
+    lat_convered = lats[j0:j1+1, i0:i1+1]
+    temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
     cp = np.cos(latp*np.pi/180.)
     dx=(lon-lon_convered)*cp
     dy=lat-lat_convered
     dist=dx*dx+dy*dy
-    i=np.argmin(dist)
+#    i=np.argmin(dist)
+    index = np.anywhere(temp=np.argmin(dist))
     min_dist=np.sqrt(dist[i])
-    return lon_convered[i], lat_convered[i]
+    return index[0]+j0, index[1]+i0
     
 nc = netCDF4.Dataset(url)
 mask = nc.variables['mask_rho'][:]
@@ -119,31 +126,44 @@ lat_rho = nc.variables['lat_rho'][:]
 time = nc.variables['time'][:]
 u = nc.variables['u'][:, -1]
 v = nc.variables['v'][:, -1]
-
-dt = []
-for i in range(len(time)):
-    dt.append(datetime(2013,5,19,12,0,0)+timedelta(hours=time[i]))
+lons = shrink(lon_rho, mask[1:, 1:].shape)
+lats = shrink(lat_rho, mask[1:, 1:].shape)
+lon_p, lat_p = [], []
+start, end = u.shape[0]-6, u.shape[0]
+#dt = []
+#for i in range(len(time)):
+#    dt.append(datetime(2013,5,19,12,0,0)+timedelta(hours=time[i]))
 for i in np.arange(start, end):
+    lon_p.append(lon)
+    lat_p.append(lat)
+    u_t = shrink(u[i], mask[1:, 1:].shape)
+    v_t = shrink(v[i], mask[1:, 1:].shape)
+    index = nearest_point_index(lon, lat, lons, lats)
+    dx = 24*60*60*u_t[index[0], index[1]]
+    dy = 34*60*60*v_t[index[0], index[1]]
+    lon = lon + dx/(111111*np.cos(lat*np.pi/180))
+    lat = lat + dy/111111
     
-u = nc.variables['u'][tidx, -1, :, :]
-v = nc.variables['v'][tidx, -1, :, :]
+#u = nc.variables['u'][tidx, -1, :, :]
+#v = nc.variables['v'][tidx, -1, :, :]
 
-u = shrink(u, mask[1:-1, 1:-1].shape)
-v = shrink(v, mask[1:-1, 1:-1].shape)
+#u = shrink(u, mask[1:-1, 1:-1].shape)
+#v = shrink(v, mask[1:-1, 1:-1].shape)
 
-lon_c = lon_rho[1:-1, 1:-1]
-lat_c = lat_rho[1:-1, 1:-1]
+#lon_c = lon_rho[1:-1, 1:-1]
+#lat_c = lat_rho[1:-1, 1:-1]
 
 p = plt.figure()
 ax = p.add_subplot(111)
-dmap = Basemap(projection='cyl',llcrnrlat=lat_c[0,0]-0.01,urcrnrlat=lat_c[-1,-1]+0.01,
-               llcrnrlon=lon_c[0,0]-0.01,urcrnrlon=lon_rho[-1,-1]+1,resolution='h')
-dmap.drawparallels(np.arange(int(lat_c[0,0]),int(lat_c[-1,-1])+1,1),labels=[1,0,0,0])
-dmap.drawmeridians(np.arange(int(lon_c[0,0]),int(lon_rho[-1,-1])+1,1),labels=[0,0,0,1])
+dmap = Basemap(projection='cyl',llcrnrlat=np.amin(lats)-0.01,urcrnrlat=np.amax(lats)+0.01,
+               llcrnrlon=np.amin(lons)-0.01,urcrnrlon=np.amax(lons)+0.01,resolution='h')
+dmap.drawparallels(np.arange(int(np.amin(lats)),int(np.amax(lats))+1,0.1),labels=[1,0,0,0])
+dmap.drawmeridians(np.arange(int(np.amin(lons)),int(np.amax(lons))+1,0.1),labels=[0,0,0,1])
 dmap.drawcoastlines()
 dmap.fillcontinents(color='green')
 dmap.drawmapboundary()
-q = ax.quiver(lon_c[::isub,::isub], lat_c[::isub,::isub], u[::isub,::isub], v[::isub,::isub],
-        scale=1.0/scale, pivot='middle', zorder=1e35, width=0.003, color='blue')
-ax.quiverkey(q, 0.85, 0.07, 1.0, label=r'1 m s$^{-1}$', coordinates='figure')
+#q = ax.quiver(lon_c[::isub,::isub], lat_c[::isub,::isub], u[::isub,::isub], v[::isub,::isub],
+#        scale=1.0/scale, pivot='middle', zorder=1e35, width=0.003, color='blue')
+#ax.quiverkey(q, 0.85, 0.07, 1.0, label=r'1 m s$^{-1}$', coordinates='figure')
+plt.plot(lon_p,lat_p,'ro-')
 plt.show()

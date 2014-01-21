@@ -82,7 +82,7 @@ def rot2d(x, y, ang):
 def bbox2ij(lon, lat, bbox):
     """Return indices for i,j that will completely cover the specified bounding box.     
     i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)
-    lon,lat = 2D arrays that are the target of the subset
+    lon,lat = 2D arrays that are the target of the subset, type: np.ndarray
     bbox = list containing the bounding box: [lon_min, lon_max, lat_min, lat_max]
 
     Example
@@ -95,10 +95,16 @@ def bbox2ij(lon, lat, bbox):
     p = path.Path(mypath)
     points = np.vstack((lon.flatten(),lat.flatten())).T   
     n,m = np.shape(lon)
-    inside = p.contains_points(points).reshape((n,m))
+#    inside = p.contains_points(points).reshape((n,m))
+    inside = []
+    for i in range(len(points)):
+        inside.append(p.contains_point(points[i]))
+    inside = np.array(inside, dtype=bool).reshape((n, m))
     ii,jj = np.meshgrid(xrange(m),xrange(n))
-    return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
-def nearest_point_index(lon, lat, lats, lons, length=(.05, .07)):
+#    return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
+#    return ii[inside], ii[inside].max(), jj[inside].min(), jj[inside].max()
+    return np.min(ii[inside]),np.max(ii[inside]),np.min(jj[inside]),np.max(jj[inside])
+def nearest_point_index(lon, lat, lats, lons, length=(0.5, 0.5)):
     '''
     Return the index of the nearest rho point.
     lon, lat: the coordiation of original point
@@ -107,15 +113,16 @@ def nearest_point_index(lon, lat, lats, lons, length=(.05, .07)):
     '''
     bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
     i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
-    lon_convered = lons[j0:j1+1, i0:i1+1]
-    lat_convered = lats[j0:j1+1, i0:i1+1]
+    lon_covered = lons[j0:j1+1, i0:i1+1]
+    lat_covered = lats[j0:j1+1, i0:i1+1]
     temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
-    cp = np.cos(latp*np.pi/180.)
-    dx=(lon-lon_convered)*cp
-    dy=lat-lat_convered
+    cp = np.cos(lat_covered*np.pi/180.)
+    dx=(lon-lon_covered)*cp
+    dy=lat-lat_covered
     dist=dx*dx+dy*dy
-#    i=np.argmin(dist)
-    index = np.anywhere(temp=np.argmin(dist))
+    i=np.argmin(dist)
+#    index = np.argwhere(temp=np.argmin(dist))
+    index = np.where(temp==i)
     min_dist=np.sqrt(dist[i])
     return index[0]+j0, index[1]+i0
     

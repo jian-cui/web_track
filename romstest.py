@@ -79,7 +79,7 @@ def rot2d(x, y, ang):
     xr = x*np.cos(ang) - y*np.sin(ang)
     yr = x*np.sin(ang) + y*np.cos(ang)
     return xr, yr
-def bbox2ij(lon, lat, bbox):
+def bbox2ij(lons, lats, bbox):
     """Return indices for i,j that will completely cover the specified bounding box.     
     i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)
     lon,lat = 2D arrays that are the target of the subset, type: np.ndarray
@@ -92,26 +92,33 @@ def bbox2ij(lon, lat, bbox):
     """
     bbox = np.array(bbox)
     mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
+    print mypath
     p = path.Path(mypath)
-    points = np.vstack((lon.flatten(),lat.flatten())).T   
-    n,m = np.shape(lon)
+    points = np.vstack((lons.flatten(),lats.flatten())).T   
+    n,m = np.shape(lons)
 #    inside = p.contains_points(points).reshape((n,m))
     inside = []
     for i in range(len(points)):
         inside.append(p.contains_point(points[i]))
     inside = np.array(inside, dtype=bool).reshape((n, m))
-    ii,jj = np.meshgrid(xrange(m),xrange(n))
+    print inside
+#    ii,jj = np.meshgrid(xrange(m),xrange(n))
 #    return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
-#    return ii[inside], ii[inside].max(), jj[inside].min(), jj[inside].max()
-    return np.min(ii[inside]),np.max(ii[inside]),np.min(jj[inside]),np.max(jj[inside])
-def nearest_point_index(lon, lat, lats, lons, length=(0.5, 0.5)):
+#    return ii[inside].min(), ii[inside].max(), jj[inside].min(), jj[inside].max()
+#    return np.min(ii[inside]), np.max(ii[inside]), np.min(jj[inside]), np.max(jj[inside])
+    index = np.where(inside==True)
+    return min(index[1]), max(index[1]), min(index[0]), max(index[0])
+#    return min(ii[inside].tolist()), max(ii[inside].tolist()), min(jj[inside].tolist()), max(jj[inside].tolist())
+def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
     '''
     Return the index of the nearest rho point.
-    lon, lat: the coordiation of original point
+    lon, lat: the coordiation of original point, float
     lats, lons: the coordiation of points want to be calculated.
     length: the boundary box.
     '''
+    print 'lon, lat: ', lon, lat
     bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
+    print bbox
     i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
     lon_covered = lons[j0:j1+1, i0:i1+1]
     lat_covered = lats[j0:j1+1, i0:i1+1]
@@ -145,9 +152,9 @@ for i in np.arange(start, end):
     lat_p.append(lat)
     u_t = shrink(u[i], mask[1:, 1:].shape)
     v_t = shrink(v[i], mask[1:, 1:].shape)
-    index = nearest_point_index(lon, lat, lons, lats)
-    dx = 24*60*60*u_t[index[0], index[1]]
-    dy = 34*60*60*v_t[index[0], index[1]]
+    index = nearest_point_index(lon, lat, lons, lats, length=(2,2))
+    dx = 24*60*60*float(u_t[index[0], index[1]])
+    dy = 34*60*60*float(v_t[index[0], index[1]])
     lon = lon + dx/(111111*np.cos(lat*np.pi/180))
     lat = lat + dy/111111
     

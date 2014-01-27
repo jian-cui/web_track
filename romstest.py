@@ -16,8 +16,8 @@ scale = 0.03
 isub = 2
 tidx = -1  # to input in which day you want to forecast(third day is -1, second day is -2,first day is -3)
 url = 'http://tds.marine.rutgers.edu/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd'
-lon = -75.80
-lat = 33.75
+lon = -74
+lat = 36.0
 def shrink(a,b):
     """Return array shrunk to fit a specified shape by triming or averaging.
     
@@ -92,7 +92,7 @@ def bbox2ij(lons, lats, bbox):
     """
     bbox = np.array(bbox)
     mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
-    print mypath
+#    print mypath
     p = path.Path(mypath)
     points = np.vstack((lons.flatten(),lats.flatten())).T   
     n,m = np.shape(lons)
@@ -106,7 +106,11 @@ def bbox2ij(lons, lats, bbox):
 #    return ii[inside].min(), ii[inside].max(), jj[inside].min(), jj[inside].max()
 #    return np.min(ii[inside]), np.max(ii[inside]), np.min(jj[inside]), np.max(jj[inside])
     index = np.where(inside==True)
-    return min(index[1]), max(index[1]), min(index[0]), max(index[0])
+    if not index[0].tolist():
+        print 'out of range.'
+        return 10000,10000,10000,10000
+    else:
+        return min(index[1]), max(index[1]), min(index[0]), max(index[0])
 def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
     '''
     Return the index of the nearest rho point.
@@ -114,21 +118,23 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
     lats, lons: the coordiation of points want to be calculated.
     length: the boundary box.
     '''
-    print 'lon, lat: ', lon, lat
     bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
     i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
-    lon_covered = lons[j0:j1+1, i0:i1+1]
-    lat_covered = lats[j0:j1+1, i0:i1+1]
-    temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
-    cp = np.cos(lat_covered*np.pi/180.)
-    dx=(lon-lon_covered)*cp
-    dy=lat-lat_covered
-    dist=dx*dx+dy*dy
-    i=np.argmin(dist)
-#    index = np.argwhere(temp=np.argmin(dist))
-    index = np.where(temp==i)
-    min_dist=np.sqrt(dist[i])
-    return index[0]+j0, index[1]+i0
+    if i0==10000:
+        return None
+    else:
+        lon_covered = lons[j0:j1+1, i0:i1+1]
+        lat_covered = lats[j0:j1+1, i0:i1+1]
+        temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
+        cp = np.cos(lat_covered*np.pi/180.)
+        dx=(lon-lon_covered)*cp
+        dy=lat-lat_covered
+        dist=dx*dx+dy*dy
+        i=np.argmin(dist)
+#        index = np.argwhere(temp=np.argmin(dist))
+        index = np.where(temp==i)
+        min_dist=np.sqrt(dist[index])
+        return index[0]+j0, index[1]+i0
     
 nc = netCDF4.Dataset(url)
 mask = nc.variables['mask_rho'][:]
@@ -145,16 +151,22 @@ start, end = u.shape[0]-6, u.shape[0]
 #for i in range(len(time)):
 #    dt.append(datetime(2013,5,19,12,0,0)+timedelta(hours=time[i]))
 for i in np.arange(start, end):
+    print "lon: %f, lat: %f" % (lon, lat)
     lon_p.append(lon)
     lat_p.append(lat)
     u_t = shrink(u[i], mask[1:, 1:].shape)
     v_t = shrink(v[i], mask[1:, 1:].shape)
-    index = nearest_point_index(lon, lat, lons, lats, length=(2,2))
+    index = nearest_point_index(lon, lat, lons, lats)
+    if not index: break
     dx = 24*60*60*float(u_t[index[0], index[1]])
     dy = 34*60*60*float(v_t[index[0], index[1]])
+#    if not dx: break                            # on land. u,v are none
     lon = lon + dx/(111111*np.cos(lat*np.pi/180))
     lat = lat + dy/111111
-    
+#    if lon<np.amin(lons) or lon>np.amax(lons) or lat<np.amin(lats) or lat>np.amax(lats):
+#        print 'point out of range'
+#        break
+        
 #u = nc.variables['u'][tidx, -1, :, :]
 #v = nc.variables['v'][tidx, -1, :, :]
 
@@ -168,8 +180,8 @@ p = plt.figure()
 ax = p.add_subplot(111)
 dmap = Basemap(projection='cyl',llcrnrlat=np.amin(lats)-0.01,urcrnrlat=np.amax(lats)+0.01,
                llcrnrlon=np.amin(lons)-0.01,urcrnrlon=np.amax(lons)+0.01,resolution='h')
-dmap.drawparallels(np.arange(int(np.amin(lats)),int(np.amax(lats))+1,0.1),labels=[1,0,0,0])
-dmap.drawmeridians(np.arange(int(np.amin(lons)),int(np.amax(lons))+1,0.1),labels=[0,0,0,1])
+dmap.drawparallels(np.arange(int(np.amin(lats)),int(np.amax(lats))+1,1),labels=[1,0,0,0])
+dmap.drawmeridians(np.arange(int(np.amin(lons)),int(np.amax(lons))+1,1),labels=[0,0,0,1])
 dmap.drawcoastlines()
 dmap.fillcontinents(color='green')
 dmap.drawmapboundary()

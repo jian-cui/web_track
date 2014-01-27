@@ -16,7 +16,7 @@ from conversions import dm2dd
 import sys
 
 #class figure_map(figure):
-    
+
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
 #lo=7005.7876
 #urlname = raw_input('please input model name(massbay or 30yr): ')
@@ -101,7 +101,7 @@ def get_indices(modelname, starttime, time_interval=None):
     '''
     Return a period of indices of certain model started from 'starttime'.
     time_interval is neccessary when use massbay or GOM3
-    
+
     modelname: string
     starttime: datetime
     time_interval: timedelta (neccessary when use massbay or GOM3)
@@ -145,15 +145,15 @@ def onclick(event):
         m.plot(lon,lat,'r.',lonc,latc,'b+')
         plt.show()
         spoint = pylab.ginput(1)
-        '''
-        
+'''
+
 def url_with_time_positon(modelname, data):
     '''
     Get the data you want from certain model.
-    
+
     modelname is the name of model, string.
     data stores the data wanted to get from web could be an array or a tuple.
-    
+
     example of 'data'(Get u):
         if the data has several dimensions then:
             data = 'u[6][5][1:1:6]', 'v[6][5][1:1:45]', 'time[5][8]'
@@ -168,7 +168,7 @@ def url_with_time_positon(modelname, data):
     else:
         raise Exception('Please use right model')
     return url
-    
+
 def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord):
     if lo>90:
         [la,lo]=dm2dd(la,lo)
@@ -294,7 +294,7 @@ def on_left_button_down(event):
     if event.button == 1 and event.xdata and event.ydata:
         x, y = event.xdata, event.ydata
         print "You clicked: ", x, y
-        if ax.title.get_text() == 'zoomin figure':
+        if event.inaxes.title.get_text() == 'zoomin figure':
             latd, lond = get_coors(modelname, x, y, lonc, latc, lon, lat, siglay, h, depth, startrecord, endrecord)
             pointnum = len(latd)
             save_data(pointnum, TIME, lat, lond)
@@ -307,12 +307,21 @@ def on_left_button_down(event):
             xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]), latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1]))
             plt.annotate('Startpoint', xy, xytext = (lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
                          latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),
-                         arrowprops = dict(arrowstyle = 'simple')0)
+                         arrowprops = dict(arrowstyle = 'simple'))
             plt.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
             plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
             plt.savefig(modelname+'driftrack.png', dpi = 200)
             plt.show()
-        if ax-title.get_text() == ''
+        elif event.inaxes.title.get_text() == name_1st_figure:
+            lat_range = [y - 0.6,y + 0.6]
+            lon_range = [x - 0.6,x + 0.6]
+            fig, ax = draw_figure(lat_range, lon_range)
+#            fig = plt.figure()
+#            ax = plt.add_subplot(111)
+            plt.title('zoomin figure')
+            fig.canvas.mpl_connect('button_press_event', on_left_button_down)
+            print 'get into on_left_button_down'
+            fig.show()
 def draw_figure(latsize, lonsize, interval_lat = 1, interval_lon = 1):
     '''
     draw the Basemap
@@ -369,7 +378,7 @@ elif modelname == "30yr":
     data = ('lon', 'lat', 'latc', 'lonc', 'siglay', 'h',
             'Times['+str(startrecord)+':1:'+str(startrecord)+']')
     url = url_with_time_position(modelname, data)
-    
+
 dataset = open_url(url)
 latc = np.array(dataset['latc'])
 lonc = np.array(dataset['lonc'])
@@ -400,8 +409,9 @@ if methods_get_startpoint == "input":
 elif methods_get_startpoint == "click":
 #    draw_map_click()
     fig, ax = draw_figure(lat,lon)
-    cid1 = fig.canvas.mpl_connect('button_press_event', on_left_click_zoomin)
-    plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
+    cid1 = fig.canvas.mpl_connect('button_press_event', on_left_button_down)
+    name_1st_figure = modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME)
+    plt.title(name_1st_figure)
     plt.savefig(modelname+'driftrack.png', dpi = 200)
     plt.show()
 else:

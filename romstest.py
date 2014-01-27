@@ -101,14 +101,12 @@ def bbox2ij(lons, lats, bbox):
     for i in range(len(points)):
         inside.append(p.contains_point(points[i]))
     inside = np.array(inside, dtype=bool).reshape((n, m))
-    print inside
 #    ii,jj = np.meshgrid(xrange(m),xrange(n))
 #    return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
 #    return ii[inside].min(), ii[inside].max(), jj[inside].min(), jj[inside].max()
 #    return np.min(ii[inside]), np.max(ii[inside]), np.min(jj[inside]), np.max(jj[inside])
     index = np.where(inside==True)
     return min(index[1]), max(index[1]), min(index[0]), max(index[0])
-#    return min(ii[inside].tolist()), max(ii[inside].tolist()), min(jj[inside].tolist()), max(jj[inside].tolist())
 def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
     '''
     Return the index of the nearest rho point.
@@ -118,7 +116,6 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
     '''
     print 'lon, lat: ', lon, lat
     bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
-    print bbox
     i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
     lon_covered = lons[j0:j1+1, i0:i1+1]
     lat_covered = lats[j0:j1+1, i0:i1+1]

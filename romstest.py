@@ -20,28 +20,28 @@ lon = -74
 lat = 36.0
 def shrink(a,b):
     """Return array shrunk to fit a specified shape by triming or averaging.
-    
+
     a = shrink(array, shape)
-    
+
     array is an numpy ndarray, and shape is a tuple (e.g., from
     array.shape). a is the input array shrunk such that its maximum
     dimensions are given by shape. If shape has more dimensions than
     array, the last dimensions of shape are fit.
-    
+
     as, bs = shrink(a, b)
-    
+
     If the second argument is also an array, both a and b are shrunk to
     the dimensions of each other. The input arrays must have the same
     number of dimensions, and the resulting arrays will have the same
     shape.
     Example
     -------
-    
+
     >>> shrink(rand(10, 10), (5, 9, 18)).shape
     (9, 10)
-    >>> map(shape, shrink(rand(10, 10, 10), rand(5, 9, 18)))        
-    [(5, 9, 10), (5, 9, 10)]   
-       
+    >>> map(shape, shrink(rand(10, 10, 10), rand(5, 9, 18)))
+    [(5, 9, 10), (5, 9, 10)]
+
     """
 
     if isinstance(b, np.ndarray):
@@ -80,21 +80,21 @@ def rot2d(x, y, ang):
     yr = x*np.sin(ang) + y*np.cos(ang)
     return xr, yr
 def bbox2ij(lons, lats, bbox):
-    """Return indices for i,j that will completely cover the specified bounding box.     
+    """Return indices for i,j that will completely cover the specified bounding box.
     i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)
     lon,lat = 2D arrays that are the target of the subset, type: np.ndarray
     bbox = list containing the bounding box: [lon_min, lon_max, lat_min, lat_max]
 
     Example
-    -------  
+    -------
     >>> i0,i1,j0,j1 = bbox2ij(lat_rho,lon_rho,[-71, -63., 39., 46])
-    >>> h_subset = nc.variables['h'][j0:j1,i0:i1]       
+    >>> h_subset = nc.variables['h'][j0:j1,i0:i1]
     """
     bbox = np.array(bbox)
     mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
 #    print mypath
     p = path.Path(mypath)
-    points = np.vstack((lons.flatten(),lats.flatten())).T   
+    points = np.vstack((lons.flatten(),lats.flatten())).T
     n,m = np.shape(lons)
 #    inside = p.contains_points(points).reshape((n,m))
     inside = []
@@ -135,7 +135,7 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
         index = np.where(temp==i)
         min_dist=np.sqrt(dist[index])
         return index[0]+j0, index[1]+i0
-    
+
 nc = netCDF4.Dataset(url)
 mask = nc.variables['mask_rho'][:]
 lon_rho = nc.variables['lon_rho'][:]
@@ -158,7 +158,7 @@ for i in np.arange(start, end):
     v_t = shrink(v[i], mask[1:, 1:].shape)
     index = nearest_point_index(lon, lat, lons, lats)
     if not index: break
-    dx = 24*60*60*float(u_t[index[0], index[1]])
+    dx = 60*60*float(u_t[index[0], index[1]])
     dy = 34*60*60*float(v_t[index[0], index[1]])
 #    if not dx: break                            # on land. u,v are none
     lon = lon + dx/(111111*np.cos(lat*np.pi/180))
@@ -166,7 +166,7 @@ for i in np.arange(start, end):
 #    if lon<np.amin(lons) or lon>np.amax(lons) or lat<np.amin(lats) or lat>np.amax(lats):
 #        print 'point out of range'
 #        break
-        
+
 #u = nc.variables['u'][tidx, -1, :, :]
 #v = nc.variables['v'][tidx, -1, :, :]
 

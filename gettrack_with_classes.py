@@ -35,6 +35,9 @@ class water:
         self.startpoint = startpoint
         self.url = url
         self.points = []
+    def get_data(self):
+        data = netCDF4.Dataset(url)
+        lons = data.variables['lon_rho']
     def bbox2ij(self, lons, lats, bbox):
         """Return indices for i,j that will completely cover the specified bounding box.     
         i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)

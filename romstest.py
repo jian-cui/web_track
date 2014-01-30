@@ -12,10 +12,10 @@ from mpl_toolkits.basemap import Basemap
 import numpy as np
 from datetime import datetime,timedelta
 #The following is modules created by self
-import modules
+import jata
 
-from time import time
-time1 = time()
+import time
+time1 = time.time()
 scale = 0.03
 isub = 3
 tidx = -1
@@ -139,21 +139,35 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
         index = np.where(temp==i)
         min_dist=np.sqrt(dist[index])
         return index[0]+j0, index[1]+i0
-
-data = modules.get_nc_data(url, 'mask_rho', 'lon_rho', 'lat_rho', 'time', 'u', 'v')
+def basemap_ax(ax, lon, lat):
+    bsmap = Basemap(projection='cyl',llcrnrlat=np.amin(lat_p)-1,urcrnrlat=np.amax(lat_p)+1,
+                   llcrnrlon=np.amin(lon_p)-1,urcrnrlon=np.amax(lon_p)+1,resolution='h',ax=ax)
+    bsmap.drawparallels(np.arange(int(np.amin(lat_p)),int(np.amax(lat_p))+1,.5),labels=[1,0,0,0])
+    bsmap.drawmeridians(np.arange(int(np.amin(lon_p)),int(np.amax(lat_p))+1,.5),labels=[0,0,0,1])
+    bsmap.drawcoastlines()
+    bsmap.fillcontinents(color='green')
+    bsmap.drawmapboundary()
+def ax_column(x, z):
+    i = 1
+    while True:
+        z1 = x*i
+        if z1>=z: break
+        i+=1
+    return i
+data = jata.get_nc_data(url, 'mask_rho', 'lon_rho', 'lat_rho', 'time', 'u', 'v') 
 mask = data['mask_rho']
 lon_rho = data['lon_rho']
 u = data['u']
 v = data['v']
-#nc = netCDF4.Dataset(url)
-#mask = nc.variables['mask_rho'][:]
-#lon_rho = nc.variables['lon_rho'][:]
-#lat_rho = nc.variables['lat_rho'][:]
-#time = nc.variables['time'][:]
-#u = nc.variables['u'][:, -1]
-#v = nc.variables['v'][:, -1]
-#lons = shrink(lon_rho, mask[1:, 1:].shape)
-lats = shrink(lat_rho, mask[1:, 1:].shape)
+nc = netCDF4.Dataset(url)
+mask = nc.variables['mask_rho'][:]
+lon_rho = nc.variables['lon_rho'][:]
+lat_rho = nc.variables['lat_rho'][:]
+time = nc.variables['time'][:]
+u = nc.variables['u'][:, -1]
+v = nc.variables['v'][:, -1]
+lons = shrink(lon_rho, mask[1:, 1:].shape)
+lats = shrink(lat_rho, mask[1:, 1:].shape) 
 lon_p, lat_p = [], []
 start, end = u.shape[0]-6, u.shape[0]
 #dt = []
@@ -183,19 +197,33 @@ v = shrink(v, mask[1:-1, 1:-1].shape)
 lon_c = lon_rho[1:-1, 1:-1]
 lat_c = lat_rho[1:-1, 1:-1]
 
-p = plt.figure()
-ax = p.add_subplot(111)
+fig = plt.figure()
+ax = fig.add_subplot(111)
 dmap = Basemap(projection='cyl',llcrnrlat=np.amin(lats)-0.01,urcrnrlat=np.amax(lats)+0.01,
                llcrnrlon=np.amin(lons)-0.01,urcrnrlon=np.amax(lons)+0.01,resolution='h')
 dmap.drawparallels(np.arange(int(np.amin(lats)),int(np.amax(lats))+1,1),labels=[1,0,0,0])
 dmap.drawmeridians(np.arange(int(np.amin(lons)),int(np.amax(lons))+1,1),labels=[0,0,0,1])
 dmap.drawcoastlines()
-dmap.fillcontinents(color='green')
+dmap.fillcontinents(color='gray')
 dmap.drawmapboundary()
-q = ax.quiver(lon_c[::isub,::isub], lat_c[::isub,::isub], u[::isub,::isub], v[::isub,::isub],
+ax.quiver(lon_c[::isub,::isub], lat_c[::isub,::isub], u[::isub,::isub], v[::isub,::isub],
         scale=1.0/scale, pivot='middle', zorder=1e35, width=0.003, color='blue')
 #ax.quiverkey(q, 0.85, 0.07, 1.0, label=r'1 m s$^{-1}$', coordinates='figure')
-plt.plot(lon_p,lat_p,'ro-')
+ax.plot(lon_p,lat_p,'ro-')
+
+fig2 = plt.figure()
+x = ax_column(2,len(lon_p))
+print x*2
+ax1 = fig2.add_subplot(x,2,1)
+basemap_ax(ax1,lon_p,lat_p)
+ax1.plot(lon_p[:1],lat_p[:1],'ro-')
+# for i in range(1,len(lon_p)):
+#     ax = fig2.add_subplot(x,2,i+1,axes=ax1)
+#     ax.plot(lon_p[:i+1],lat_p[:i+1],'ro-')
+for i in range(1,len(lon_p)):
+    ax = fig2.add_subplot(x,2,i+1,sharex=ax1,sharey=ax1)
+    basemap_ax(ax,lon_p,lat_p)
+    ax.plot(lon_p[:i+1],lat_p[:i+1],'ro-')
 plt.show()
-time2 = time()
+time2 = time.time()
 print time2-time1

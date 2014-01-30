@@ -147,7 +147,7 @@ def onclick(event):
         spoint = pylab.ginput(1)
 '''
 
-def url_with_time_positon(modelname, data):
+def url_with_time_position(modelname, data):
     '''
     Get the data you want from certain model.
 
@@ -195,7 +195,7 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
 #               else:
 #                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
 #                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-               url = url_with_time_positon(modelname, data_want)
+               url = url_with_time_position(modelname, data_want)
                dataset = open_url(url)
                u=np.array(dataset['u'])
                v=np.array(dataset['v'])
@@ -372,7 +372,7 @@ if modelname=="massbay" or "GOM3":
     startrecord, endrecord = get_indices(modelname, TIME, time_interval)
     data = ('lon', 'lat', 'latc', 'lonc', 'siglay', 'h',
             'Times['+str(startrecord)+':1:'+str(startrecord)+']')
-    url = url_with_time_positon(modelname, data)
+    url = url_with_time_position(modelname, data)
 elif modelname == "30yr":
     startrecord, endrecord = get_indices(modelname, TIME)
     data = ('lon', 'lat', 'latc', 'lonc', 'siglay', 'h',

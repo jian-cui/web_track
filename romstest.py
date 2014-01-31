@@ -24,28 +24,28 @@ lon = -73
 lat = 38.0
 def shrink(a,b):
     """Return array shrunk to fit a specified shape by triming or averaging.
-
+    
     a = shrink(array, shape)
-
+    
     array is an numpy ndarray, and shape is a tuple (e.g., from
     array.shape). a is the input array shrunk such that its maximum
     dimensions are given by shape. If shape has more dimensions than
     array, the last dimensions of shape are fit.
-
+    
     as, bs = shrink(a, b)
-
+    
     If the second argument is also an array, both a and b are shrunk to
     the dimensions of each other. The input arrays must have the same
     number of dimensions, and the resulting arrays will have the same
     shape.
     Example
     -------
-
+    
     >>> shrink(rand(10, 10), (5, 9, 18)).shape
     (9, 10)
-    >>> map(shape, shrink(rand(10, 10, 10), rand(5, 9, 18)))
-    [(5, 9, 10), (5, 9, 10)]
-
+    >>> map(shape, shrink(rand(10, 10, 10), rand(5, 9, 18)))        
+    [(5, 9, 10), (5, 9, 10)]   
+       
     """
 
     if isinstance(b, np.ndarray):
@@ -140,32 +140,41 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
         min_dist=np.sqrt(dist[index])
         return index[0]+j0, index[1]+i0
 def basemap_ax(ax, lon, lat):
-    bsmap = Basemap(projection='cyl',llcrnrlat=np.amin(lat_p)-1,urcrnrlat=np.amax(lat_p)+1,
-                   llcrnrlon=np.amin(lon_p)-1,urcrnrlon=np.amax(lon_p)+1,resolution='h',ax=ax)
-    bsmap.drawparallels(np.arange(int(np.amin(lat_p)),int(np.amax(lat_p))+1,.5),labels=[1,0,0,0])
-    bsmap.drawmeridians(np.arange(int(np.amin(lon_p)),int(np.amax(lat_p))+1,.5),labels=[0,0,0,1])
+    bsmap = Basemap(projection='cyl',
+                    llcrnrlat=np.amin(lat_p)-1,urcrnrlat=np.amax(lat_p)+1,
+                    llcrnrlon=np.amin(lon_p)-1,urcrnrlon=np.amax(lon_p)+1,
+                    resolution='h',ax=ax)
+    bsmap.drawparallels(np.arange(int(np.amin(lat_p)),int(np.amax(lat_p))+1,.5),
+                        labels=[1,0,0,0])
+    bsmap.drawmeridians(np.arange(int(np.amin(lon_p)),int(np.amax(lat_p))+1,.5),
+                        labels=[0,0,0,1])
     bsmap.drawcoastlines()
-    bsmap.fillcontinents(color='green')
+    bsmap.fillcontinents(color='gray')
     bsmap.drawmapboundary()
-def ax_column(x, z):
-    i = 1
+def smallest_multpr(x, z):
+    '''
+    return the smallest y, while x*y>=z
+    x, y, z are all positive num.
+    '''
+    y = 1
     while True:
-        z1 = x*i
+        z1 = x*y
         if z1>=z: break
-        i+=1
-    return i
+        y+=1
+    return y
 data = jata.get_nc_data(url, 'mask_rho', 'lon_rho', 'lat_rho', 'time', 'u', 'v') 
-mask = data['mask_rho']
-lon_rho = data['lon_rho']
-u = data['u']
-v = data['v']
-nc = netCDF4.Dataset(url)
-mask = nc.variables['mask_rho'][:]
-lon_rho = nc.variables['lon_rho'][:]
-lat_rho = nc.variables['lat_rho'][:]
-time = nc.variables['time'][:]
-u = nc.variables['u'][:, -1]
-v = nc.variables['v'][:, -1]
+mask = data['mask_rho'][:]
+lon_rho = data['lon_rho'][:]
+lat_rho = data['lat_rho'][:]
+u = data['u'][:,-1]
+v = data['v'][:,-1]
+# nc = netCDF4.Dataset(url)
+# mask = nc.variables['mask_rho'][:]
+# lon_rho = nc.variables['lon_rho'][:]
+# lat_rho = nc.variables['lat_rho'][:]
+# time = nc.variables['time'][:]
+# u = nc.variables['u'][:, -1]
+# v = nc.variables['v'][:, -1]
 lons = shrink(lon_rho, mask[1:, 1:].shape)
 lats = shrink(lat_rho, mask[1:, 1:].shape) 
 lon_p, lat_p = [], []
@@ -186,7 +195,6 @@ for i in np.arange(start, end):
     print u_t[index[0], index[1]], v_t[index[0], index[1]]
     lon = lon + dx/(111111*np.cos(lat*np.pi/180))
     lat = lat + dy/111111
-
 #u = nc.variables['u'][tidx, -1, :, :]
 #v = nc.variables['v'][tidx, -1, :, :]
 u = u[tidx,:,:]
@@ -199,31 +207,39 @@ lat_c = lat_rho[1:-1, 1:-1]
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-dmap = Basemap(projection='cyl',llcrnrlat=np.amin(lats)-0.01,urcrnrlat=np.amax(lats)+0.01,
-               llcrnrlon=np.amin(lons)-0.01,urcrnrlon=np.amax(lons)+0.01,resolution='h')
-dmap.drawparallels(np.arange(int(np.amin(lats)),int(np.amax(lats))+1,1),labels=[1,0,0,0])
-dmap.drawmeridians(np.arange(int(np.amin(lons)),int(np.amax(lons))+1,1),labels=[0,0,0,1])
-dmap.drawcoastlines()
-dmap.fillcontinents(color='gray')
-dmap.drawmapboundary()
-ax.quiver(lon_c[::isub,::isub], lat_c[::isub,::isub], u[::isub,::isub], v[::isub,::isub],
-        scale=1.0/scale, pivot='middle', zorder=1e35, width=0.003, color='blue')
+bmap = Basemap(projection='cyl',
+               llcrnrlat=np.amin(lats)-0.01,
+               urcrnrlat=np.amax(lats)+0.01,
+               llcrnrlon=np.amin(lons)-0.01,
+               urcrnrlon=np.amax(lons)+0.01,resolution='h')
+bmap.drawparallels(np.arange(int(np.amin(lats)),int(np.amax(lats))+1,1),
+                   labels=[1,0,0,0])
+bmap.drawmeridians(np.arange(int(np.amin(lons)),int(np.amax(lons))+1,1),
+                   labels=[0,0,0,1])
+bmap.drawcoastlines()
+bmap.fillcontinents(color='gray')
+bmap.drawmapboundary()
+ax.quiver(lon_c[::isub,::isub], lat_c[::isub,::isub],
+          u[::isub,::isub], v[::isub,::isub],
+          scale=1.0/scale, pivot='middle',
+          zorder=1e35, width=0.003,color='blue')
 #ax.quiverkey(q, 0.85, 0.07, 1.0, label=r'1 m s$^{-1}$', coordinates='figure')
 ax.plot(lon_p,lat_p,'ro-')
 
 fig2 = plt.figure()
-x = ax_column(2,len(lon_p))
-print x*2
-ax1 = fig2.add_subplot(x,2,1)
-basemap_ax(ax1,lon_p,lat_p)
-ax1.plot(lon_p[:1],lat_p[:1],'ro-')
+x = smallest_multpr(2,len(lon_p))
+print x*2, ' axes'
+# ax1 = fig2.add_subplot(x,2,1)
+# basemap_ax(ax1,lon_p,lat_p)
+# ax1.plot(lon_p[:1],lat_p[:1],'ro-')
 # for i in range(1,len(lon_p)):
 #     ax = fig2.add_subplot(x,2,i+1,axes=ax1)
 #     ax.plot(lon_p[:i+1],lat_p[:i+1],'ro-')
-for i in range(1,len(lon_p)):
-    ax = fig2.add_subplot(x,2,i+1,sharex=ax1,sharey=ax1)
+for i in range(0,len(lon_p)):
+#    ax = fig2.add_subplot(x,2,i+1,sharex=ax1,sharey=ax1)
+    ax = fig2.add_subplot(x,2,i+1)
     basemap_ax(ax,lon_p,lat_p)
     ax.plot(lon_p[:i+1],lat_p[:i+1],'ro-')
 plt.show()
 time2 = time.time()
-print time2-time1
+print 'used time: ', time2-time1

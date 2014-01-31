@@ -1,21 +1,35 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import numpy as np
-
+import jmath
 class figure_with_basemap:
-    def __init__(self,lonsize,latsize,interval_lon=1,interval_lat=1):
+    def __init__(self,lonsize,latsize,axes_num=1,interval_lon=1,interval_lat=1):
         '''
-        draw the Basemap
+        draw the Basemap, set the axes num in the figure
         '''
 #        super(add_figure, self).__init__()
         self.lonsize, self.latsize = lonsize, latsize
         self.fig = plt.figure()
-        self.ax = plt.subplot(111)
-        self.cid = self.fig.canvas.mpl_connect('button_press_event', self.on_left_button_down)
-        self.dmap = Basemap(projection='cyl',llcrnrlat=min(self.latsize)-0.01,urcrnrlat=max(self.latsize)+0.01,
-                            llcrnrlon=min(self.lonsize)-0.01,urcrnrlon=max(self.lonsize)+0.01,resolution='h')
-        self.dmap.drawparallels(np.arange(int(min(self.latsize)),int(max(latsize))+1,interval_lat),labels=[1,0,0,0])
-        self.dmap.drawmeridians(np.arange(int(min(lonsize))-1,int(max(lonsize))+1,interval_lon),labels=[0,0,0,1])
+        line_num = jmath.smallest_multpr(2,axes_num)
+        if line_num = 1:
+            column_num = 1
+        else:
+            column_num = 2
+        self.ax = plt.subplot(line_num,column_num,1)
+        self.cid = self.fig.canvas.mpl_connect('button_press_event',
+                                               self.on_left_button_down)
+        self.dmap = Basemap(projection='cyl',
+                            llcrnrlat=min(self.latsize)-0.01,
+                            urcrnrlat=max(self.latsize)+0.01,
+                            llcrnrlon=min(self.lonsize)-0.01,
+                            urcrnrlon=max(self.lonsize)+0.01,
+                            resolution='h',ax=ax)
+        self.dmap.drawparallels(np.arange(int(min(self.latsize)),
+                                          int(max(latsize))+1,interval_lat),
+                                labels=[1,0,0,0])
+        self.dmap.drawmeridians(np.arange(int(min(lonsize))-1,
+                                          int(max(lonsize))+1,interval_lon),
+                                labels=[0,0,0,1])
         self.dmap.drawcoastlines()
         self.dmap.fillcontinents(color='grey')
         self.dmap.drawmapboundary()

@@ -45,13 +45,19 @@ class figure_with_basemap:
         self.fig.show()
     size = property(getSize)
 class water:
-    def __init__(self, startpoint, url):
+    def __init__(self, startpoint, fileloc):
+        '''
+        get startpoint of water, and the location of datafile.
+        startponit = [25,45]
+        fileloc = 'http://getfile.com/file.nc'
+        or
+        fileloc = '/net/usr/datafile.nc'
+        '''
         self.startpoint = startpoint
-        self.url = url
+        self.fileloc = fileloc
         self.points = []
-    def get_data(self):
-        data = netCDF4.Dataset(url)
-        lons = data.variables['lon_rho']
+    def get_data(self, fileloc):
+        self.fileloc = fileloc
     def bbox2ij(self, lons, lats, bbox):
         """Return indices for i,j that will completely cover the specified bounding box.     
         i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)
@@ -75,16 +81,15 @@ class water:
             inside.append(p.contains_point(points[i]))
         inside = np.array(inside, dtype=bool).reshape((n, m))
 #        ii,jj = np.meshgrid(xrange(m),xrange(n))
-#        return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
-#        return ii[inside].min(), ii[inside].max(), jj[inside].min(), jj[inside].max()
-#        return np.min(ii[inside]), np.max(ii[inside]), np.min(jj[inside]), np.max(jj[inside])
         index = np.where(inside==True)
-        if not index[0].tolist():
-            print 'out of range.'
-            return 10000,10000,10000,10000
+        if not index[0].tolist():          # bbox covers no area
+            # print 'out of range.'
+            # i0,i1,j0,j1 = 10000,10000,10000,10000
+            raise(Exception, 'no points in this area')
         else:
-            return min(index[1]), max(index[1]), min(index[0]), max(index[0])
-     def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
+            i0,i1,j0,j1 = min(index[1]),max(index[1]),min(index[0]),max(index[0])
+        return i0, i1, j0, j1
+    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 1)):
         '''
         Return the index of the nearest rho point.
         lon, lat: the coordiation of original point, float
@@ -93,21 +98,19 @@ class water:
         '''
         bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
         i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
-        if i0==10000:
-            return None
-        else:
-            lon_covered = lons[j0:j1+1, i0:i1+1]
-            lat_covered = lats[j0:j1+1, i0:i1+1]
-            temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
-            cp = np.cos(lat_covered*np.pi/180.)
-            dx=(lon-lon_covered)*cp
-            dy=lat-lat_covered
-            dist=dx*dx+dy*dy
-            i=np.argmin(dist)
-#            index = np.argwhere(temp=np.argmin(dist))
-            index = np.where(temp==i)
-            min_dist=np.sqrt(dist[index])
-            return index[0]+j0, index[1]+i0
-    
+        lon_covered = lons[j0:j1+1, i0:i1+1]
+        lat_covered = lats[j0:j1+1, i0:i1+1]
+        temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
+        cp = np.cos(lat_covered*np.pi/180.)
+        dx=(lon-lon_covered)*cp
+        dy=lat-lat_covered
+        dist=dx*dx+dy*dy
+        i=np.argmin(dist)
+        index = np.argwhere(temp=np.argmin(dist))
+        index = np.where(temp==i)
+        min_dist=np.sqrt(dist[index])
+        return index[0]+j0, index[1]+i0
+    def waternode(self, timeperiod):
+        
 if __name__ == '__main__':
 #    figure_with_basemap().show()

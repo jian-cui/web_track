@@ -13,6 +13,7 @@ import numpy as np
 from datetime import datetime,timedelta
 #The following is modules created by self
 import jata
+# import jmath
 
 import time
 time1 = time.time()
@@ -105,16 +106,13 @@ def bbox2ij(lons, lats, bbox):
     for i in range(len(points)):
         inside.append(p.contains_point(points[i]))
     inside = np.array(inside, dtype=bool).reshape((n, m))
-#    ii,jj = np.meshgrid(xrange(m),xrange(n))
-#    return min(ii[inside]),max(ii[inside]),min(jj[inside]),max(jj[inside])
-#    return ii[inside].min(), ii[inside].max(), jj[inside].min(), jj[inside].max()
-#    return np.min(ii[inside]), np.max(ii[inside]), np.min(jj[inside]), np.max(jj[inside])
     index = np.where(inside==True)
-    if not index[0].tolist():
-        print 'out of range.'
-        return 10000,10000,10000,10000
-    else:
-        return min(index[1]), max(index[1]), min(index[0]), max(index[0])
+    # if not index[0].tolist():
+    #     print 'out of range.'
+    #     return 10000,10000,10000,10000
+    # else:
+    #     return min(index[1]), max(index[1]), min(index[0]), max(index[0])
+    return min(index[1]), max(index[1]), min(index[0]), max(index[0])
 def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
     '''
     Return the index of the nearest rho point.
@@ -140,6 +138,9 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
         min_dist=np.sqrt(dist[index])
         return index[0]+j0, index[1]+i0
 def basemap_ax(ax, lon, lat):
+    '''
+    draw the basemap of specific ax
+    '''
     bsmap = Basemap(projection='cyl',
                     llcrnrlat=np.amin(lat_p)-1,urcrnrlat=np.amax(lat_p)+1,
                     llcrnrlon=np.amin(lon_p)-1,urcrnrlon=np.amax(lon_p)+1,
@@ -227,6 +228,7 @@ ax.quiver(lon_c[::isub,::isub], lat_c[::isub,::isub],
 ax.plot(lon_p,lat_p,'ro-')
 
 fig2 = plt.figure()
+# x = jmath.smallest_multpr(2,len(lon_p))
 x = smallest_multpr(2,len(lon_p))
 print x*2, ' axes'
 # ax1 = fig2.add_subplot(x,2,1)

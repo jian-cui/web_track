@@ -6,7 +6,13 @@ from mpl_toolkits.basemap import Basemap
 import time
 
 def data_extracted(filename,drifter_id=None,starttime=None):
-    data = {}                        # a dict to store 'time', 'lon', 'lat'
+    '''
+    get a dict made of time, lon, lat from local file.
+    filename: local file diretory
+    drifter_id: the specific data of some id you want.
+    starttime: have to be input with drifter_id, or just drifter_id.
+    '''
+    data = {}
     did, dtime, dlon, dlat = [], [], [], []
     with open(filename, 'r') as f:
         for line in f.readlines():

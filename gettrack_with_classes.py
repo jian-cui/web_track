@@ -44,20 +44,20 @@ class figure_with_basemap:
     def show():
         self.fig.show()
     size = property(getSize)
-class water:
-    def __init__(self, startpoint, fileloc):
+class water(object):
+    def __init__(self, startpoint, dataloc, modelname):
         '''
         get startpoint of water, and the location of datafile.
-        startponit = [25,45]
-        fileloc = 'http://getfile.com/file.nc'
+        startpoint = [25,45]
+        dataloc = 'http://getfile.com/file.nc'
         or
-        fileloc = '/net/usr/datafile.nc'
+        dataloc = '/net/usr/datafile.nc'
         '''
+        self.modelname = modelname
         self.startpoint = startpoint
-        self.fileloc = fileloc
-        self.points = []
-    def get_data(self, fileloc):
-        self.fileloc = fileloc
+        self.dataloc = dataloc
+    def get_data(self, dataloc):
+        pass
     def bbox2ij(self, lons, lats, bbox):
         """Return indices for i,j that will completely cover the specified bounding box.     
         i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)
@@ -97,7 +97,7 @@ class water:
         length: the boundary box.
         '''
         bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
-        i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
+        i0, i1, j0, j1 = self.bbox2ij(lons, lats, bbox)
         lon_covered = lons[j0:j1+1, i0:i1+1]
         lat_covered = lats[j0:j1+1, i0:i1+1]
         temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
@@ -110,7 +110,59 @@ class water:
         index = np.where(temp==i)
         min_dist=np.sqrt(dist[index])
         return index[0]+j0, index[1]+i0
-    def waternode(self, timeperiod):
+    def waternode(self, timeperiod, data):
+        pass
+    def shrink():
         
-if __name__ == '__main__':
-#    figure_with_basemap().show()
+class water_roms(water):
+    def __init__(self, dataloc, startpoint, modelname):
+        self.startpoint = startpoint
+        self.dataloc = dataloc
+        self.startpoint = startpoint
+    def get_data(self):
+        self.data = jata.get_nc_data(self.dataloc, 'mask_rho', 'lon_rho',
+                                                   'lat_rho', 'time', 'u', 'v')
+        return self.data
+    def waternode(self, timeperiod, data):
+        lon, lat = self.startpoint[0], self.startponit[1]
+        lon_nodes, lat_nodes = [], []
+        mask = data['mask_rho'][:]
+        lon_rho = data['lon_rho'][:]
+        lat_rho = data['lat_rho'][:]
+        u = data['u'][:,-1]
+        v = data['v'][:,-1]
+        lons = shrink(lon_rho, mask[1:,1:].shape)
+        lats = shrink(lat_rho, mask[1:,1:].shape)
+        start, end = u.shape[0]-days, u.shape[0]
+        for i in range(start, end):
+            lon_node.append(lon)
+            lat_node.append(lat)
+            u_t = shrink(u[i], mask[1:,1:].shape)
+            v_t = shrink(v[i], mask[1:,1:].shape)
+            index = nearest_point_index(lon, lat, lons, lats)
+            dx = 24*60*60*u_t[index[0],index[1]]
+            dy = 24*60*60*v_t[index[0],index[1]]
+            lon = lon + dx/(111111*np.cos(lat*np.pi/180))
+            lat = lat + dy/111111
+        return lon_nodes, lat_nodes
+class water_fvcom(water):
+    def __init__(self, dataloc, startpoint, modelname):
+        self.modelname = modelname
+        self.dataloc = dataloc
+        self.startpoint = startpoint
+    def get_data(self):
+        self.data = jata.get_nc_data(self.dataloc, 'lon', 'lat', 'latc', 'lonc',
+                                     'siglay', 'h', 'Times')
+        return self.data
+    def waternode(self, timeperiod, data):
+        if lon>90:
+            lon, lat = dm2dd(lon, lat)
+        lon_nodes, lat_nodes = [], []
+        kf,distanceF = nearest_point_index(lon,lat,lonc,latc)
+        kv,distanceV = nearest_point_index(lon,lat,lonv,latv)
+        if h[kv] < 0:
+            sys.exit('Sorry, your position is on land, please try another point')
+        depth_total = siglay[:,kv]*h[kv]
+        layer = np.argmin(abs(depthtotal-depth))
+        for i in range(start,end):
+            

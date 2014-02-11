@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import numpy as np
-import jmath
+import jmath, jata
 class figure_with_basemap:
     def __init__(self,lonsize,latsize,axes_num=1,interval_lon=1,interval_lat=1):
         '''
@@ -11,7 +11,7 @@ class figure_with_basemap:
         self.lonsize, self.latsize = lonsize, latsize
         self.fig = plt.figure()
         line_num = jmath.smallest_multpr(2,axes_num)
-        if line_num = 1:
+        if line_num == 1:
             column_num = 1
         else:
             column_num = 2
@@ -112,7 +112,6 @@ class water(object):
         return index[0]+j0, index[1]+i0
     def waternode(self, timeperiod, data):
         pass
-    def shrink():
         
 class water_roms(water):
     def __init__(self, dataloc, startpoint, modelname):
@@ -124,40 +123,90 @@ class water_roms(water):
                                                    'lat_rho', 'time', 'u', 'v')
         return self.data
     def waternode(self, timeperiod, data):
-        lon, lat = self.startpoint[0], self.startponit[1]
+        lon, lat = self.startpoint[0], self.startpointt[1]
         lon_nodes, lat_nodes = [], []
         mask = data['mask_rho'][:]
         lon_rho = data['lon_rho'][:]
         lat_rho = data['lat_rho'][:]
         u = data['u'][:,-1]
         v = data['v'][:,-1]
-        lons = shrink(lon_rho, mask[1:,1:].shape)
-        lats = shrink(lat_rho, mask[1:,1:].shape)
+        lons = jata.shrink(lon_rho, mask[1:,1:].shape)
+        lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         start, end = u.shape[0]-days, u.shape[0]
         for i in range(start, end):
             lon_node.append(lon)
             lat_node.append(lat)
-            u_t = shrink(u[i], mask[1:,1:].shape)
-            v_t = shrink(v[i], mask[1:,1:].shape)
+            u_t = jata.shrink(u[i], mask[1:,1:].shape)
+            v_t = jata.shrink(v[i], mask[1:,1:].shape)
             index = nearest_point_index(lon, lat, lons, lats)
             dx = 24*60*60*u_t[index[0],index[1]]
             dy = 24*60*60*v_t[index[0],index[1]]
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
         return lon_nodes, lat_nodes
+
 class water_fvcom(water):
-    def __init__(self, dataloc, startpoint, modelname):
+    def __init__(self, startpoint, starttime, modelname, days):
+        '''
+        starttime: datetime.datetime()
+        '''
         self.modelname = modelname
-        self.dataloc = dataloc
+        self.days = days
         self.startpoint = startpoint
+        # data = ('lon', 'lat', 'lonc', 'latc', 'siglay', 'h')
+        # if self.modelname is '30yr':
+        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
+        #                    ','.join(data)
+        # elif self.modelname is 'GOM3':
+        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?'+\
+        #                    ','.join(data)
+        # elif self.modelname is 'massbay':
+        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?'+\
+        #                    ','.join(data)
+        # else:
+        #     raise Exception('Please use right model')
+    def get_interval(self, starttime):
+        '''
+        starttime: datetime.datetime()
+        '''
+        days_int = self.days
+        days_datetime = time.timedelta(days=self.days)
+        datakeys = ('lon', 'lat', 'lonc', 'latc', 'siglay', 'h')
+        if self.modelname is '30yr':
+            self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
+                           ','.join(datakeys)
+            yearnum = starttime.year-1981
+            standardtime = datatime.strptime(str(starttime.year)+'-01-01 00:00:00',
+                                             '%Y-%m-%d %H:%M:%S')
+            index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+\
+                      24*(starttime-standardtime).days
+            index2 = index1+24*days_int
+        elif self.modelname is 'GOM3':
+            self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?'+\
+                           ','.join(datakeys)
+            period = (starttime+days_datetime)-(datetime.now()-timedelta(days=3))
+            index1 = (period.seconds)/60/60
+            index2 = index1 + 24*(days_int)
+        elif self.modelname is 'massbay':
+            self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?'+\
+                           ','.join(datakeys)
+            period = (starttime+days_datetime)-(datetime.now()-timedelta(days=3))
+            index1 = (timeperiod.seconds)/60/60
+            index2 = index1+24*days_int
+        else:
+            raise Exception('Please use right model')
     def get_data(self):
         self.data = jata.get_nc_data(self.dataloc, 'lon', 'lat', 'latc', 'lonc',
                                      'siglay', 'h', 'Times')
         return self.data
-    def waternode(self, timeperiod, data):
+    def waternode(self, lon, lat, lonc, latc, lonv, latv, start, end, data):
+        '''
+        start, end: indices of some period
+        data: a dict that has 'u' and 'v'
+        '''
         if lon>90:
             lon, lat = dm2dd(lon, lat)
-        lon_nodes, lat_nodes = [], []
+        nodes = dict(lon_nodes=[], lat_nodes=[])
         kf,distanceF = nearest_point_index(lon,lat,lonc,latc)
         kv,distanceV = nearest_point_index(lon,lat,lonv,latv)
         if h[kv] < 0:
@@ -165,4 +214,30 @@ class water_fvcom(water):
         depth_total = siglay[:,kv]*h[kv]
         layer = np.argmin(abs(depthtotal-depth))
         for i in range(start,end):
-            
+            u_t = np.array(data['u'])[i,layer,kf]
+            v_t = np.array(data['v'])[i,layer,kf]
+            dx = 60*60*u_t
+            dy = 60*60*v_t
+            lon = lon + (dx/(111111*np.cos(lat*np.pi/180)))
+            lat = lat + dy/111111
+            nodes['lon_nodes'].append(lon)
+            nodes['lat_nodes'].append(lat)
+            kf, distanceF = nearest_point_index(lon, lat, lonc, latc)
+            kv, distanceV = nearest_point_index(lon, lat, lonv, latv)
+            depth_total = siglay[:,kv]*h[kv]
+            if distanceV>=.3:
+                if i==start:
+                    print 'Sorry, your start position is NOT in the model domain'
+                    break
+        return nodes
+
+class water_drifter(water):
+    def __init__(self, dataloc,drifter_id=None, starttime=None):
+        self.dataloc = dataloc
+        self.startpoint = startpoint
+        self.starttime = starttime
+    def waternode(self):
+        # self.drifter_id = jata.input_with_default('drifter ID', 139420691)
+        # self.starttime = datetime(year=2013, month=9, day=29, hour=11,minute=46)
+        nodes = data_extracted(dataloc, self.drifter_id, self.starttime)
+        return nodes

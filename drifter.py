@@ -66,7 +66,7 @@ def data_extracted(filename,drifter_id=None,starttime=None):
     return data
 def index_of_value(dlist,dvalue):
     '''
-    return the indices of dlist that equal dvalue
+    return the indices of dlist that equals dvalue
     '''
     index = []
     startindex = dlist.index(dvalue)

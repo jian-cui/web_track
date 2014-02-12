@@ -97,7 +97,7 @@ def bbox2ij(lons, lats, bbox):
     """
     bbox = np.array(bbox)
     mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
-#    print mypath
+    print 'path', mypath
     p = path.Path(mypath)
     points = np.vstack((lons.flatten(),lats.flatten())).T
     n,m = np.shape(lons)
@@ -121,6 +121,7 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
     length: the boundary box.
     '''
     bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
+    print 'bbox lon', lon, 'bbox lat', lat
     i0, i1, j0, j1 = bbox2ij(lons, lats, bbox)
     if i0==10000:
         return None
@@ -136,6 +137,9 @@ def nearest_point_index(lon, lat, lons, lats, length=(1, 1)):
 #        index = np.argwhere(temp=np.argmin(dist))
         index = np.where(temp==i)
         min_dist=np.sqrt(dist[index])
+        print 'index', index
+        print 'index[0]', index[0]
+        print 'index[0]+j0', index[0]+j0
         return index[0]+j0, index[1]+i0
 def basemap_ax(ax, lon, lat):
     '''

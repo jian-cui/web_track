@@ -64,8 +64,8 @@ class water(object):
     def get_data(self, dataloc):
         pass
     def bbox2ij(self, lons, lats, bbox):
-        """Return indices for i,j that will completely cover the specified bounding box.     
-        i0,i1,j0,j1 = bbox2ij(lon,lat,bbox)
+        """Return tuple of indices for i,j that will completely cover the specified bounding box.     
+        i = bbox2ij(lon,lat,bbox)
         lon,lat = 2D arrays that are the target of the subset, type: np.ndarray
         bbox = list containing the bounding box: [lon_min, lon_max, lat_min, lat_max]
     
@@ -87,19 +87,20 @@ class water(object):
         for i in range(len(points)):
             inside.append(p.contains_point(points[i]))
         inside = np.array(inside, dtype=bool).reshape(tshape)
-        print inside
+        print 'inside', inside
 #        ii,jj = np.meshgrid(xrange(m),xrange(n))
         index = np.where(inside==True)
+        print 'index: ', index
         if not index[0].tolist():          # bbox covers no area
             # print 'out of range.'
             # i0,i1,j0,j1 = 10000,10000,10000,10000
             raise Exception('no points in this area')
         else:
-            points_covered = [point[index[i]] for i in range(len(index))]
+            # points_covered = [point[index[i]] for i in range(len(index))]
             # for i in range(len(index)):
                 # p.append(point[index[i])
             # i0,i1,j0,j1 = min(index[1]),max(index[1]),min(index[0]),max(index[0])
-        return points_covered
+            return index                
     def nearest_point_index(self, lon, lat, lons, lats, length=(1, 1)):
         '''
         Return the index of the nearest rho point.
@@ -108,20 +109,35 @@ class water(object):
         length: the boundary box.
         '''
         bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
-        i0, i1, j0, j1 = self.bbox2ij(lons, lats, bbox)
-        points = self.bbox
-        lon_covered = lons[j0:j1+1, i0:i1+1]
-        lat_covered = lats[j0:j1+1, i0:i1+1]
-        temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
+        # i0, i1, j0, j1 = self.bbox2ij(lons, lats, bbox)
+        # lon_covered = lons[j0:j1+1, i0:i1+1]
+        # lat_covered = lats[j0:j1+1, i0:i1+1]
+        # temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
+        # cp = np.cos(lat_covered*np.pi/180.)
+        # dx=(lon-lon_covered)*cp
+        # dy=lat-lat_covered
+        # dist=dx*dx+dy*dy
+        # i=np.argmin(dist)
+        # # index = np.argwhere(temp=np.argmin(dist))
+        # index = np.where(temp==i)
+        # min_dist=np.sqrt(dist[index])
+        # return index[0]+j0, index[1]+i0
+    
+        index = self.bbox2ij(lons, lats, bbox)
+        print 'index', len(index), index
+        lon_covered = lons[index]
+        lat_covered = lats[index]
+        # lon_covered = np.array([lons[i] for i in index])
+        # lat_covered = np.array([lats[i] for i in index])
         cp = np.cos(lat_covered*np.pi/180.)
-        dx=(lon-lon_covered)*cp
-        dy=lat-lat_covered
-        dist=dx*dx+dy*dy
-        i=np.argmin(dist)
-        # index = np.argwhere(temp=np.argmin(dist))
-        index = np.where(temp==i)
-        min_dist=np.sqrt(dist[index])
-        return index[0]+j0, index[1]+i0
+        dx = (lon-lon_covered)*cp
+        dy = lat-lat_covered
+        dist = dx*dx+dy*dy
+        print 'dist', len(dist),dist
+        i = np.argmin(dist)
+        findex = [j[i] for j in index]
+        print findex
+        return findex, dist[i]
     def waternode(self, timeperiod, data):
         pass
         
@@ -131,8 +147,8 @@ class water_roms(water):
         self.startpoint = startpoint
         self.days = days
     def get_data(self):
-        self.data = jata.get_nc_data(self.dataloc, 'mask_rho', 'lon_rho',
-                                                   'lat_rho', 'time', 'u', 'v')
+        self.data = jata.get_nc_data(self.dataloc, 'lon_rho', 'lat_rho',
+                                                   'mask_rho', 'time', 'u', 'v')
         return self.data
     def waternode(self, data):
         lon, lat = self.startpoint[0], self.startpoint[1]
@@ -153,7 +169,7 @@ class water_roms(water):
             # nodes['lat'].append(lat)
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
-            index = self.nearest_point_index(lon, lat, lons, lats)
+            index,nearestdistance = self.nearest_point_index(lon, lat, lons, lats)
             dx = 24*60*60*float(u_t[index[0],index[1]])
             dy = 24*60*60*float(v_t[index[0],index[1]])
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
@@ -188,7 +204,7 @@ class water_fvcom(water):
         '''
         days_int = self.days
         days_datetime = timedelta(days=self.days)
-        datakeys = ('lon', 'lat', 'lonc', 'latc', 'siglay', 'h')
+        datakeys = ('u', 'v', 'lon', 'lat', 'lonc', 'latc', 'siglay', 'h')
         if self.modelname is '30yr':
             self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
                            ','.join(datakeys)
@@ -208,20 +224,24 @@ class water_fvcom(water):
             self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?'+\
                            ','.join(datakeys)
             period = (starttime+days_datetime)-(datetime.now()-timedelta(days=3))
-            index1 = (timeperiod.seconds)/60/60
+            index1 = (period.seconds)/60/60
             index2 = index1+24*days_int
         else:
             raise Exception('Please use right model')
         return self.dataloc, [index1, index2]
     def get_data(self, dataloc):
         self.data = jata.get_nc_data(dataloc, 'lon', 'lat', 'latc', 'lonc',
-                                     'siglay', 'h')
+                                     'u', 'v', 'siglay', 'h')
         return self.data
-    def waternode(self, lon, lat, lonc, latc, lonv, latv, start, end, data):
+    def waternode(self, lon, lat, depth, start, end, data):
         '''
         start, end: indices of some period
         data: a dict that has 'u' and 'v'
         '''
+        lonc,latc = data['lonc'][:], data['latc'][:]
+        lonv, latv = data['lon'][:], data['lat'][:]
+        h = data['h'][:]
+        siglay = data['siglay'][:]
         if lon>90:
             lon, lat = dm2dd(lon, lat)
         nodes = dict(lon_nodes=[], lat_nodes=[])
@@ -231,18 +251,28 @@ class water_fvcom(water):
             sys.exit('Sorry, your position is on land, please try another point')
         depth_total = siglay[:,kv]*h[kv]
         ###############layer###########################
-        layer = np.argmin(abs(depthtotal-depth))
+        layer = np.argmin(abs(depth_total-depth))
+        print start, end, layer, kf
+        m = 0
         for i in range(start,end):
-            u_t = np.array(data['u'])[i,layer,kf]
-            v_t = np.array(data['v'])[i,layer,kf]
+            m += 1
+            print 'm:', m
+            print data['u'][0,0,0]
+            # u_t = np.array(data['u'])[i,layer,kf]
+            # v_t = np.array(data['v'])[i,layer,kf]
+            u_t = data['u'][i,layer,kf[0]]
+            v_t = data['v'][i,layer,kf[0]]
             dx = 60*60*u_t
             dy = 60*60*v_t
+            print 'dx',dx
             lon = lon + (dx/(111111*np.cos(lat*np.pi/180)))
             lat = lat + dy/111111
             nodes['lon_nodes'].append(lon)
             nodes['lat_nodes'].append(lat)
-            kf, distanceF = nearest_point_index(lon, lat, lonc, latc)
-            kv, distanceV = nearest_point_index(lon, lat, lonv, latv)
+            print 'nodes', nodes
+            kf, distanceF = self.nearest_point_index(lon, lat, lonc, latc)
+            print 'kf',kf
+            kv, distanceV = self.nearest_point_index(lon, lat, lonv, latv)
             depth_total = siglay[:,kv]*h[kv]
             if distanceV>=.3:
                 if i==start:
@@ -279,21 +309,21 @@ if modelname is 'drifter':
     plt.show()
 elif modelname is 'ROMS':
     # dataloc = 'http://tds.marine.rutgers.edu/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd'
-    startpoint = (-73, 38.0)
-    days = 6
-    isub = 3
-    scale = 0.03
-    tidx = -1
+    startpoint = (-73, 38.0)  #point wanted to be forecast
+    days = 6                  #forecast 3 days later, and show [days-3] days before
+    isub = 3                  #interval of arrow of water speed
+    scale = 0.03              #
+    tidx = -1                 #layer. -1 is the last one.
     
     water_roms = water_roms(startpoint, days)
-    data = water_roms.get_data
+    data = water_roms.get_data()
     nodes = water_roms.waternode(data)
     lonc = data['lon_rho'][1:-1, 1:-1]
     latc = data['lat_rho'][1:-1, 1:-1]
     u = data['u'][:, -1][tidx,:,:]
     v = data['v'][:, -1][tidx,:,:]
-    u = shrink(u, data['mask'][1:-1, 1:-1].shape)
-    v = shrink(v, data['mask'][1:-1, 1:-1].shape)
+    u = jata.shrink(u, data['mask_rho'][1:-1, 1:-1].shape)
+    v = jata.shrink(v, data['mask_rho'][1:-1, 1:-1].shape)
     lonsize = min(nodes['lon'])-1, max(nodes['lon'])+1
     latsize = min(nodes['lat'])-1, max(nodes['lat'])+1
     fig = figure_with_basemap(lonsize, latsize)
@@ -304,24 +334,32 @@ elif modelname is 'ROMS':
     plt.plot(nodes['lon'], nodes['lat'], 'ro-')
     plt.show()
 elif modelname is 'FVCOM':
-    model = '30yr'
+    model = 'massbay'
     days = 2
-    starttime = '2014-02-07 13:40:00'
-    lon = -70.318466
-    lat = 39.344644
+    #when you choose '30yr' model, please keep
+    #starttime before 2010-12-31 after 1978.
+    starttime = '2014-02-13 13:40:00'
+    lon = -70.718466
+    lat = 40.844644
     # lon = float(jata.input_with_default('lon', 7031.8486))
     # lat = float(jata.input_with_default('lat', 3934.4644))
     # starttime = jata.input_with_default('TIME','2014-02-07 13:40:00')
     starttime = datetime.strptime(starttime, "%Y-%m-%d %H:%M:%S")
+    depth = -3
     
     water_fvcom = water_fvcom(model, days)
     dataloc, index = water_fvcom.get_interval(starttime)
     data = water_fvcom.get_data(dataloc)
-    nodes = water_fvcom.waternode(lon, lat, data['lonc'][:], data['latc'][:],
-                                  data['lon'][:], data['lat'][:],
-                                  index[0], index[1], data)
-    lonsize = min(nodes['lon'])-1, max(nodes['lat'])+1
-    latsize = min(nodes['lat'])-1, max(nodes['lat'])+1
+    nodes = water_fvcom.waternode(lon, lat, depth, index[0], index[1], data)
+    lonsize = min(nodes['lon_nodes'])-1, max(nodes['lon_nodes'])+1
+    latsize = min(nodes['lat_nodes'])-1, max(nodes['lat_nodes'])+1
     fig = figure_with_basemap(lonsize, latsize)
-    fig.ax.plot(nodes['lon'], nodes['lat'], 'ro-')
+    fig.ax.plot(nodes['lon_nodes'], nodes['lat_nodes'], 'ro-')
     plt.show()
+
+drifter_id = jata.input_with_default('drifter_id', 139420691)
+
+drifter = water_drifter(drifter_id, starttime)
+nodes = drifter.waternode()
+
+startpoint = nodes['lon'][0], nodes['lat'][0]

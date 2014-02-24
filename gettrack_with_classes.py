@@ -8,6 +8,7 @@ import matplotlib as mpl
 from matplotlib import path
 from datetime import timedelta
 from conversions import dm2dd
+import sys
 
 class figure_with_basemap(mpl.figure.Figure):
     def __init__(self,lonsize,latsize,axes_num=1,interval_lon=1,interval_lat=1):
@@ -179,50 +180,46 @@ class water_roms(water):
         return nodes
 
 class water_fvcom(water):
-    def __init__(self, modelname, days,starttime):
+    def __init__(self, modelname):
         '''
         starttime: datetime.datetime()
         '''
         self.modelname = modelname
-        self.days = days
-        self.starttime = startitme
-        
-        datakeys = ('u', 'v', 'lon', 'lat', 'lonc', 'latc', 'siglay', 'h')
-        if self.modelname is '30yr':
-            self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
-                           ','.join(datakeys)
-            yearnum = starttime.year-1981
-            standardtime = datetime.strptime(str(starttime.year)+'-01-01 00:00:00',
-                                             '%Y-%m-%d %H:%M:%S')
-            index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+\
-                      24*(starttime-standardtime).days
-            index2 = index1+24*self.days
-        elif self.modelname is 'GOM3':
-            self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?'+\
-                           ','.join(datakeys)
-            period = (starttime+timedelta(days=self.days))-\
-                      (datetime.now()-timedelta(days=3))
-            index1 = (period.seconds)/60/60
-            index2 = index1 + 24*(self.days)
-        elif self.modelname is 'massbay':
-            self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?'+\
-                           ','.join(datakeys)
-            period = (starttime+timedelta(days=self.days))-\
-                     (datetime.now()-timedelta(days=3))
-            index1 = (period.seconds)/60/60
-            index2 = index1+24*self.days
-        else:
-            raise Exception('Please use right model')
-        self.index = [index1, index2]
-    def get_url_30yr(self, starttime, endtime):
+        # if self.modelname is '30yr':
+        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
+        #                    ','.join(datakeys)
+        #     yearnum = starttime.year-1981
+        #     standardtime = datetime.strptime(str(starttime.year)+'-01-01 00:00:00',
+        #                                      '%Y-%m-%d %H:%M:%S')
+        #     index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+\
+        #               24*(starttime-standardtime).days
+        #     index2 = index1+24*self.days
+        # elif self.modelname is 'GOM3':
+        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?'+\
+        #                    ','.join(datakeys)
+        #     period = (starttime+timedelta(days=self.days))-\
+        #               (datetime.now()-timedelta(days=3))
+        #     index1 = (period.seconds)/60/60
+        #     index2 = index1 + 24*(self.days)
+        # elif self.modelname is 'massbay':
+        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?'+\
+        #                    ','.join(datakeys)
+        #     period = (starttime+timedelta(days=self.days))-\
+        #              (datetime.now()-timedelta(days=3))
+        #     index1 = (period.seconds)/60/60
+        #     index2 = index1+24*self.days
+        # else:
+        #     raise Exception('Please use right model')
+        # self.index = [index1, index2]
+    def get_url(self, starttime, endtime):
         if self.modelname is "30yr":
             url = []
-            time1 = datetime(year=2010,month=12,day=31)      #all these datetime are made based on the model.
-            time2 = datetime(year=2011,month=11,day=10)      #The model use different version data of different period.
-            time3 = datetime(year=2013,month=05,day=08)
-            time4 = datetime(year=2013,month=11,day=30)
+            time1 = datetime(year=2011,month=1,day=1)      #all these datetime are made based on the model.
+            time2 = datetime(year=2011,month=11,day=11)      #The model use different version data of different period.
+            time3 = datetime(year=2013,month=05,day=9)
+            time4 = datetime(year=2013,month=12,day=1)
             # endtime = starttime + timedelta(days=days)
-            if endtime.year < time1:
+            if endtime < time1:
                 yearnum = starttime.year-1981
                 standardtime = datetime.strptime(str(starttime.year)+'-01-01 00:00:00',
                                                  '%Y-%m-%d %H:%M:%S')
@@ -231,8 +228,8 @@ class water_fvcom(water):
                 index2 = index1 + 24*(self.days)
                 furl = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?h[0:1:48450],lat[0:1:48450],latc[0:1:90414],lon[0:1:48450],lonc[0:1:90414],u[{0}:1:{1}][0:1:44][0:1:90414],v[{0}:1:{1}][0:1:44][0:1:90414]'
                 url.append(furl.format(index1, index2)) 
-            elif time1 < endtime <= time2: # endtime is in GOM3_v11
-                url.extend(self.temp(starttime,endtime,time2,time3))
+            elif time1 <= endtime < time2: # endtime is in GOM3_v11
+                url.extend(self.temp(starttime,endtime,time1,time2))
                 # if starttime > time1:
                 #     if starttime.month == endtime.month:
                 #         url.append(url_version(11,starttime.month,
@@ -253,7 +250,7 @@ class water_fvcom(water):
                 # elif starttime <= time1: # start time  is from 1978 to 2010
                 #     url.extend(get_url(starttime, time1))
                 #     url.extend(get_url(time1+timedelta(days=1), endtime))
-            elif time2 < endtime <= time3:  # endtime is in GOM3_v12
+            elif time2 <= endtime < time3:  # endtime is in GOM3_v12
                 url.extend(self.temp(starttime,endtime,time2,time3))
                 # if starttime > time2:    #start time is from 2011.11.10 as v12
                 #     if starttime.month == endtime.month:
@@ -290,8 +287,8 @@ class water_fvcom(water):
                 # else:
                 #     url.extend(get_url(starttime,time2))
                 #     url.extend(get_url(datetime(year=2011,month=11,day=11),endtime))
-            elif time3 < endtime <= time4:
-                url.extend(self.temp(starttime,endtime,time3,time4))          
+            elif time3 <= endtime < time4:
+                url.extend(self.temp(starttime,endtime,time3,time4))
                 # if starttime > time3:
                 #     if starttime.month == endtime.month:
                 #         url.append(url_version(starttime.year,starttime.month,
@@ -310,16 +307,17 @@ class water_fvcom(water):
             index1 = starttime -datatime.new().replace(hour=0,)
         return url
     def temp(self, starttime, endtime, time1, time2):
-        if time1 < endtime <= time2:
+        if time1 <= endtime < time2:
             pass
         else:
+            print time1, time2
             sys.exit('{0} not in the right period'.format(endtime))
         url = []
-        if starttime > time1:    #start time is from 2011.11.10 as v12
+        if starttime >= time1:    #start time is from 2011.11.10 as v12
             if starttime.month == endtime.month:
                 url.append(self.url_version(starttime.year,starttime.month,
-                                       [starttime.day,starttime.hour],
-                                       [endtime.day,endtime.hour]))
+                                            [starttime.day,starttime.hour],
+                                            [endtime.day,endtime.hour]))
             else:
                 if starttime.year == endtime.year:
                     y = starttime.year
@@ -348,47 +346,48 @@ class water_fvcom(water):
                                                datetime(year=i,month=12,day=31)))
              
         else:
-            url.extend(self.get_url(starttime,time1))
-            url.extend(self.get_url(datetime(year=2011,month=11,day=11),endtime))
+            url.extend(self.get_url(starttime,(time1-timedelta(minutes=1))))
+            # url.extend(self.get_url(datetime(year=2011,month=11,day=10),endtime))
+            url.extend(self.get_url(time1,endtime))
         return url
-            
-    def url_version(self, year, month, startday, endday):
+
+    def url_version(self, year, month, start_daytime, end_daytime):
         '''
-        startday,endday: [day,hour]
+        start_daytime,end_daytime: [day,hour]
         '''
-        url_v11 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v11_{0}{1}.nc?lon[0:1:48727],lat[0:1:48727],lonc[0:1:90997],latc[0:1:90997],h[0:1:48727],u[{3}:1:{4}][0:1:39][0:1:90997],v[{3}:1:{4}][0:1:39][0:1:90997]'
-        url_v12 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v11_{0}{1}.nc?lon[0:1:48859],lat[0:1:48859],lonc[0:1:91257],latc[0:1:91257],h[0:1:48859],u[{2}:1:{3}][0:1:39][0:1:91257],v[{2}:1:{3}][0:1:39][0:1:91257]'
-        url_v13 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v13_{0}{1}.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],h[0:1:51215],u[{2}:1:{3}][0:1:39][0:1:95721],v[{2}:1:{3}][0:1:39][0:1:95721]'
-        time1 = datetime(year=2010,month=12,day=31)      #all these datetime are made based on the model.
-        time2 = datetime(year=2011,month=11,day=10)      #The model use different version data of different period.
-        time3 = datetime(year=2013,month=05,day=08)
-        time4 = datetime(year=2013,month=11,day=30)
-        currenttime = datetime(year=year,month=month,day=startday[0])
+        url_v11 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v11_{0}{1}.nc?lon[0:1:48727],lat[0:1:48727],lonc[0:1:90997],latc[0:1:90997],h[0:1:48727],u[{2}:1:{3}][0:1:39][0:1:90997],v[{2}:1:{3}][0:1:39][0:1:90997],siglay[0:1:39][0:1:48727]'
+        url_v12 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v12_{0}{1}.nc?lon[0:1:48859],lat[0:1:48859],lonc[0:1:91257],latc[0:1:91257],h[0:1:48859],u[{2}:1:{3}][0:1:39][0:1:91257],v[{2}:1:{3}][0:1:39][0:1:91257],siglay[0:1:39][0:1:48859]'
+        url_v13 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v13_{0}{1}.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],h[0:1:51215],u[{2}:1:{3}][0:1:39][0:1:95721],v[{2}:1:{3}][0:1:39][0:1:95721],siglay[0:1:39][0:1:51215]'
+        time1 = datetime(year=2011,month=1,day=1)      #all these datetime are made based on the model.
+        time2 = datetime(year=2011,month=11,day=11)      #The model use different version data of different period.
+        time3 = datetime(year=2013,month=05,day=9)
+        time4 = datetime(year=2013,month=12,day=1)
+        currenttime = datetime(year=year,month=month,day=start_daytime[0])
                                        
-        if time1 < currenttime <= time2:
+        if time1 <= currenttime < time2:
             version = '11'
-        elif time2 < currenttime <= time3:
+        elif time2 <= currenttime < time3:
             version = '12'
-        elif time3 < currenttime <= time4:
+        elif time3 <= currenttime < time4:
             version = '13'
 
-        if year == 2011 and month == 11  and startday[0] >10:
-            start = str((24*start[0]+start[1]-240)
-            end = str(24*end[0]+end[1]-240)
-        elif year == 2013 and month == 5 and startday[0] >8:
-            start = str(24*start[0]+start[1]-192)
-            end = str(24*end[0]+end[1]-192)
+        if year == 2011 and month == 11  and start_daytime[0] >10:
+            start = str(24*(start_daytime[0]-1)+start_daytime[1]-240)
+            end = str(24*(end_daytime[0]-1)+end_daytime[1]-240)
+        elif year == 2013 and month == 5 and start_daytime[0] >8:
+            start = str(24*(start_daytime[0]-1)+start_daytime[1]-192)
+            end = str(24*(end_daytime[0]-1)+end_daytime[1]-192)
         else:
-            start = str(24*start[0]+start[1])
-            end = str(24*end[0]+end[1])
+            start = str(24*(start_daytime[0]-1)+start_daytime[1])
+            end = str(24*(end_daytime[0]-1)+end_daytime[1])
         year = str(year)
         month = '{0:02d}'.format(month)
         
-        if version = '11':
+        if version == '11':
             url = url_v11.format(year, month, start, end)
-        elif verison = '12':
+        elif version == '12':
             url = url_v12.format(year, month, start, end)
-        elif version = '13':
+        elif version == '13':
             url = url_v13.format(year, month, start, end)
         return url
     # def get_interval(self, starttime):
@@ -422,16 +421,26 @@ class water_fvcom(water):
     #     else:
     #         raise Exception('Please use right model')
     #     return self.dataloc, [index1, index2]
-    def get_data(self):
-        self.data = jata.get_nc_data(self.dataloc, 'lon', 'lat', 'latc', 'lonc',
-                                     'u', 'v', 'siglay', 'h')
+    def get_data(self,url):
+        self.data = jata.get_nc_data(url,'lon','lat','latc','lonc',
+                                     'u','v','siglay','h')
         return self.data
-    def waternode(self, lon, lat, depth, data):
+    def waternode(self, lon, lat, depth, url):
+        try:
+            nodes = self.__waternode(lon, lat, depth, url)
+        except(TypeError):
+            nodes = dict(lon=[lon],lat=[lat])
+            for i in url:
+                temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], depth, i)
+                nodes['lat'].extend(temp['lat'])
+                nodes['lon'].extend(temp['lon'])
+        return nodes
+    def __waternode(self, lon, lat, depth, url):
         '''
         start, end: indices of some period
         data: a dict that has 'u' and 'v'
         '''
-        start,end = self.index[0], self.index[1]
+        data = self.get_data(url)
         lonc,latc = data['lonc'][:], data['latc'][:]
         lonv, latv = data['lon'][:], data['lat'][:]
         h = data['h'][:]
@@ -446,26 +455,18 @@ class water_fvcom(water):
         depth_total = siglay[:,kv]*h[kv]
         ###############layer###########################
         layer = np.argmin(abs(depth_total-depth))
-        print start, end, layer, kf
-        m = 0
-        for i in range(start,end):
-            m += 1
-            print 'm:', m
-            print data['u'][0,0,0]
+        for i in range(len(data['u'])):
             # u_t = np.array(data['u'])[i,layer,kf]
             # v_t = np.array(data['v'])[i,layer,kf]
             u_t = data['u'][i,layer,kf[0]]
             v_t = data['v'][i,layer,kf[0]]
             dx = 60*60*u_t
             dy = 60*60*v_t
-            print 'dx',dx
             lon = lon + (dx/(111111*np.cos(lat*np.pi/180)))
             lat = lat + dy/111111
             nodes['lon'].append(lon)
             nodes['lat'].append(lat)
-            print 'nodes', nodes
             kf, distanceF = self.nearest_point_index(lon, lat, lonc, latc)
-            print 'kf',kf
             kv, distanceV = self.nearest_point_index(lon, lat, lonv, latv)
             depth_total = siglay[:,kv]*h[kv]
             if distanceV>=.3:
@@ -530,10 +531,10 @@ elif modelname is 'ROMS':
     plt.show()
 elif modelname is 'FVCOM':
     model = '30yr'
-    days = 2
+    days = 4
     #when you choose '30yr' model, please keep
     #starttime before 2010-12-31 after 1978.
-    starttime = '2014-02-13 13:40:00'
+    starttime = '2011-11-9 13:40:00'
     lon = -70.718466
     lat = 40.844644
     # lon = float(jata.input_with_default('lon', 7031.8486))
@@ -542,15 +543,17 @@ elif modelname is 'FVCOM':
     starttime = datetime.strptime(starttime, "%Y-%m-%d %H:%M:%S")
     depth = -3
     
-    water_fvcom = water_fvcom(model, days)
+    water_fvcom = water_fvcom(model)
     # dataloc, index = water_fvcom.get_interval(starttime)
-    data = water_fvcom.get_data(dataloc)
-    nodes = water_fvcom.waternode(lon, lat, depth, data)
+    # data = water_fvcom.get_data()
+    url  = water_fvcom.get_url(starttime, starttime+timedelta(days=days))
+    nodes = water_fvcom.waternode(lon, lat, depth, url)
     lonsize = min(nodes['lon'])-1, max(nodes['lon'])+1
     latsize = min(nodes['lat'])-1, max(nodes['lat'])+1
     fig = figure_with_basemap(lonsize, latsize)
-    fig.ax.plot(nodes['lon_nodes'], nodes['lat_nodes'], 'ro-')
+    fig.ax.plot(nodes['lon'], nodes['lat'], 'ro-')
     plt.show()
+    
 
 
 # #######################################

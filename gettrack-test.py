@@ -14,7 +14,7 @@ from pydap.client import open_url
 from datetime import timedelta
 from conversions import dm2dd
 import sys
-
+import netCDF4
 #class figure_map(figure):
 
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
@@ -147,7 +147,7 @@ def onclick(event):
         spoint = pylab.ginput(1)
 '''
 
-def url_with_time_positon(modelname, data):
+def url_with_time_position(modelname, data):
     '''
     Get the data you want from certain model.
 
@@ -180,49 +180,48 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
         sys.exit()
     depthtotal=siglay[:,kv]*h[kv]
     layer=np.argmin(abs(depthtotal-depth))
-
     for i in range(startrecord,endrecord):
 ############read the particular time model from website#########
-               timeurl='['+str(i)+':1:'+str(i)+']'
-               uvposition=str([layer])+str([kf])
-               data_want = ('u'+timeurl+uvposition, 'v'+timeurl+uvposition)
-#               if urlname=="30yr":
-#                   url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
-#                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-#               elif urlname == "GOM3":
-#                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
-#                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-#               else:
-#                   url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
-#                       'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
-               url = url_with_time_positon(modelname, data_want)
-               dataset = open_url(url)
-               u=np.array(dataset['u'])
-               v=np.array(dataset['v'])
+        timeurl='['+str(i)+':1:'+str(i)+']'
+        uvposition=str([layer])+str([kf])
+        data_want = ('u'+timeurl+uvposition, 'v'+timeurl+uvposition)
+#        if urlname=="30yr":
+#            url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
+#                'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+#        elif urlname == "GOM3":
+#            url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
+#                'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+#        else:
+#            url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
+#                'Times'+timeurl+',u'+timeurl+uvposition+','+'v'+timeurl+uvposition
+        url = url_with_time_position(modelname, data_want)
+        dataset = open_url(url)
+        u=np.array(dataset['u'])
+        v=np.array(dataset['v'])
 ################get the point according the position###################
 #               print kf,u[0,0,0],v[0,0,0],layer
-               par_u=u[0,0,0]
-               par_v=v[0,0,0]
-               xdelta=par_u*60*60 #get_coors
-               ydelta=par_v*60*60
-               latdelta=ydelta/111111
-               londelta=(xdelta/(111111*np.cos(la*np.pi/180)))
-               la=la+latdelta
-               lo=lo+londelta
-               latd.append(la)
-               lond.append(lo)
-               kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
-               kv,distanceV=nearlonlat(lon,lat,lo,la)# nearest triangle vertex V - vertex
-               depthtotal=siglay[:,kv]*h[kv]
-#               layer=np.argmin(abs(depthtotal-depth))
-               if distanceV>=0.3:
-                   if i==startrecord:
-                      print 'Sorry, your start position is NOT in the model domain'
-                   break
+        par_u=u[0,0,0]
+        par_v=v[0,0,0]
+        xdelta=par_u*60*60 #get_coors
+        ydelta=par_v*60*60
+        latdelta=ydelta/111111
+        londelta=(xdelta/(111111*np.cos(la*np.pi/180)))
+        la=la+latdelta
+        lo=lo+londelta
+        latd.append(la)
+        lond.append(lo)
+        kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
+        kv,distanceV=nearlonlat(lon,lat,lo,la)# nearest triangle vertex V - vertex
+        depthtotal=siglay[:,kv]*h[kv]
+#        layer=np.argmin(abs(depthtotal-depth))
+        if distanceV>=0.3:
+            if i==startrecord:
+                print 'Sorry, your start position is NOT in the model domain'
+                break
     return latd ,lond
 
 def axes_interval(x):
-    n=0
+    n = 0
     if 1<abs(x)<=10:
         n=1
     elif 10<abs(x)<180:
@@ -372,25 +371,33 @@ if modelname=="massbay" or "GOM3":
     startrecord, endrecord = get_indices(modelname, TIME, time_interval)
     data = ('lon', 'lat', 'latc', 'lonc', 'siglay', 'h',
             'Times['+str(startrecord)+':1:'+str(startrecord)+']')
-    url = url_with_time_positon(modelname, data)
+    url = url_with_time_position(modelname, data)
 elif modelname == "30yr":
     startrecord, endrecord = get_indices(modelname, TIME)
     data = ('lon', 'lat', 'latc', 'lonc', 'siglay', 'h',
             'Times['+str(startrecord)+':1:'+str(startrecord)+']')
     url = url_with_time_position(modelname, data)
 
-dataset = open_url(url)
-latc = np.array(dataset['latc'])
-lonc = np.array(dataset['lonc'])
-lat = np.array(dataset['lat'])
-lon = np.array(dataset['lon'])
-siglay=np.array(dataset['siglay'])
-h=np.array(dataset['h'])
+dataset = netCDF4.Dataset(url)
+latc = np.array(dataset.variables['latc'][:])
+lonc = np.array(dataset.variables['lonc'][:])
+lat = np.array(dataset.variables['lat'][:])
+lon = np.array(dataset.variables['lon'][:])
+siglay=np.array(dataset.variables['siglay'][:])
+h=np.array(dataset.variables['h'][:])
+#dataset = open_url(url)
+#latc = np.array(dataset['latc'])
+#lonc = np.array(dataset['lonc'])
+#lat = np.array(dataset['lat'])
+#lon = np.array(dataset['lon'])
+#siglay=np.array(dataset['siglay'])
+#h=np.array(dataset['h'])
 
 if methods_get_startpoint == "input":
     la = float(input_with_default('lat', 3934.4644))
     lo = float(input_with_default('lon', 7031.8486))
-    latd, lond = get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord)
+    latd, lond = get_coors(modelname, lo, la, lonc, latc, lon, lat,
+                           siglay, h, depth, startrecord, endrecord)
     fig1, ax1 = draw_figure(latd, lond)
     pointnum = len(latd)
     save_data(pointnum, TIME, latd, lond)
@@ -399,9 +406,11 @@ if methods_get_startpoint == "input":
     latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
     lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
     fig2, ax2 = draw_figure(latsize, lonsize)
-    plt.annotate('Startpoint',xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
-                latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),
-                arrowprops = dict(arrowstyle = 'simple'))
+    plt.annotate('Startpoint',
+                 xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
+                         latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),
+                 xy=(lond[0] ,latd[0]),
+                 arrowprops = dict(arrowstyle = 'simple'))
     ax2.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
     plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
     plt.savefig(modelname+'driftrack.png', dpi = 200)

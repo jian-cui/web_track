@@ -14,7 +14,7 @@ from pydap.client import open_url
 from datetime import timedelta
 from conversions import dm2dd
 import sys
-
+import netCDF4
 #class figure_map(figure):
 
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
@@ -378,13 +378,20 @@ elif modelname == "30yr":
             'Times['+str(startrecord)+':1:'+str(startrecord)+']')
     url = url_with_time_position(modelname, data)
 
-dataset = open_url(url)
-latc = np.array(dataset['latc'])
-lonc = np.array(dataset['lonc'])
-lat = np.array(dataset['lat'])
-lon = np.array(dataset['lon'])
-siglay=np.array(dataset['siglay'])
-h=np.array(dataset['h'])
+dataset = netCDF4.Dataset(url)
+latc = np.array(dataset.variables['latc'][:])
+lonc = np.array(dataset.variables['lonc'][:])
+lat = np.array(dataset.variables['lat'][:])
+lon = np.array(dataset.variables['lon'][:])
+siglay=np.array(dataset.variables['siglay'][:])
+h=np.array(dataset.variables['h'][:])
+#dataset = open_url(url)
+#latc = np.array(dataset['latc'])
+#lonc = np.array(dataset['lonc'])
+#lat = np.array(dataset['lat'])
+#lon = np.array(dataset['lon'])
+#siglay=np.array(dataset['siglay'])
+#h=np.array(dataset['h'])
 
 if methods_get_startpoint == "input":
     la = float(input_with_default('lat', 3934.4644))
@@ -399,9 +406,11 @@ if methods_get_startpoint == "input":
     latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
     lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
     fig2, ax2 = draw_figure(latsize, lonsize)
-    plt.annotate('Startpoint',xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
-                latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),
-                arrowprops = dict(arrowstyle = 'simple'))
+    plt.annotate('Startpoint',
+                 xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),
+                         latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),
+                 xy=(lond[0] ,latd[0]),
+                 arrowprops = dict(arrowstyle = 'simple'))
     ax2.plot(lond,latd,'ro-',lond[-1],latd[-1],'mo',lond[0],latd[0],'mo')
     plt.title(modelname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
     plt.savefig(modelname+'driftrack.png', dpi = 200)

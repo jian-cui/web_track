@@ -97,7 +97,7 @@ class water(object):
                 # p.append(point[index[i])
             # i0,i1,j0,j1 = min(index[1]),max(index[1]),min(index[0]),max(index[0])
             return index
-    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 1), num=1):
+    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 10), num=1):
         '''
         Return the index of the nearest rho point.
         lon, lat: the coordiation of original point, float
@@ -118,27 +118,30 @@ class water(object):
         # index = np.where(temp==i)
         # min_dist=np.sqrt(dist[index])
         # return index[0]+j0, index[1]+i0
-    
+        
         index = self.bbox2ij(lons, lats, bbox)
         lon_covered = lons[index]
         lat_covered = lats[index]
-        if len(lat_covered) < num:
-            raise ValueError('not enough points in the bbox')
+        # if len(lat_covered) < num:
+            # raise ValueError('not enough points in the bbox')
         # lon_covered = np.array([lons[i] for i in index])
         # lat_covered = np.array([lats[i] for i in index])
         cp = np.cos(lat_covered*np.pi/180.)
         dx = (lon-lon_covered)*cp
         dy = lat-lat_covered
         dist = dx*dx+dy*dy
-        # dist_temp = np.sort(np)[0:9]
-        # temp = []
-        # for i in range(num):
-        #     temp.append(np.where(dist=dist_temp[i]))
-        i = np.argmin(dist)
-        findex = [j[i] for j in index]
-        print index
-        print 'findex', findex
-        return findex, dist[i]
+        dist_sort = np.sort(dist)[0:9]
+        findex = np.where(dist==dist_sort[0])
+        for i in range(1,num):
+            t = np.where(dist==dist_sort[i])
+            for j in range(len(findex)):
+                findex[j] = np.append(findex[j], t[j])
+                print findex[j], t[j]
+                print findex ,t
+            # data.append(np.where(dist=dist_sort[i]))
+        # i = np.argmin(dist)
+        # findex = [j[i] for j in index]
+        return findex, dist_sort[0]
     def waternode(self, timeperiod, data):
         pass
 class water_roms(water):
@@ -174,8 +177,8 @@ class water_roms(water):
             url = url1.format(index1, index2)
         return url
     def get_data(self, url):
-        self.data = jata.get_nc_data(url, 'lon_rho', 'lat_rho',
-                                                   'mask_rho', 'u', 'v')
+        self.data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho',
+                                     'u', 'v')
         return self.data
     def waternode(self, lon, lat, url):
         self.startpoint = lon, lat
@@ -193,10 +196,8 @@ class water_roms(water):
         return nodes
     def __waternode(self, lon, lat, url):
         lon, lat = self.startpoint[0], self.startpoint[1]
-        # lon_nodes, lat_nodes = [], []
         data = self.get_data(url)
         nodes = dict(lon=[], lat=[])
-        # nodes = dict(lon=[], lat=[])
         mask = self.data['mask_rho'][:]
         lon_rho = self.data['lon_rho'][:]
         lat_rho = self.data['lat_rho'][:]
@@ -204,18 +205,18 @@ class water_roms(water):
         v = self.data['v'][:,-1]
         lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         lats = jata.shrink(lat_rho, mask[1:,1:].shape)
-        # start, end = u.shape[0]-self.days, u.shape[0]
         for i in range(0, self.days):
-            # nodes['lon'].append(lon)
-            # nodes['lat'].append(lat)
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
-            try:
-                index,nearestdistance = self.nearest_point_index(lon, lat, lons, lats, num=9)
-            except(Exception):
-                print 'point hit the land'
-            dx = 24*60*60*float(u_t[index[0],index[1]])
-            dy = 24*60*60*float(v_t[index[0],index[1]])
+            index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats,num=9)
+            print index
+            print u_t
+            u_p = u_t[index[0], index[1]]
+            v_p = v_t[index[0], index[1]]
+            if not u_p and not v_p:
+                raise Exception('point hit the land')
+            dx = 24*60*60*float(u_p)
+            dy = 24*60*60*float(v_p)
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
             nodes['lon'].append(lon)

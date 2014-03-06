@@ -132,16 +132,18 @@ class water(object):
         dist = dx*dx+dy*dy
         dist_sort = np.sort(dist)[0:9]
         findex = np.where(dist==dist_sort[0])
-        for i in range(1,num):
-            t = np.where(dist==dist_sort[i])
-            for j in range(len(findex)):
-                findex[j] = np.append(findex[j], t[j])
-                print findex[j], t[j]
-                print findex ,t
+        lists = [[]] * len(findex)
+        for i in range(len(findex)):
+            lists[i] = findex[i]
+        if num > 1:
+            for j in range(1,num):
+                t = np.where(dist==dist_sort[j])
+                for i in range(len(findex)):
+                    lists[i] = np.append(lists[i], t[i])
             # data.append(np.where(dist=dist_sort[i]))
         # i = np.argmin(dist)
-        # findex = [j[i] for j in index]
-        return findex, dist_sort[0]
+        indx = [i[lists] for i in index]
+        return indx, dist_sort[0:num]
     def waternode(self, timeperiod, data):
         pass
 class water_roms(water):
@@ -177,27 +179,23 @@ class water_roms(water):
             url = url1.format(index1, index2)
         return url
     def get_data(self, url):
-        self.data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho',
-                                     'u', 'v')
+        self.data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho','u', 'v')
         return self.data
     def waternode(self, lon, lat, url):
         self.startpoint = lon, lat
-        try:
-            nodes = dict(lon=[self.startpoint[0]],lat=[self.startpoint[-1]])
-            temp = self.__waternode(self.startpoint[0], self.startpoint[-1], url)
-            nodes['lon'].extend(temp['lon'])
-            nodes['lat'].extend(temp['lat'])
-        except(TypeError):
+        if type(url) is str:
+            nodes = self.__waternode(lon, lat, url)
+        else:
             nodes = dict(lon=[self.startpoint[0]],lat=[self.startpoint[-1]])
             for i in url:
                 temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], i)
-                nodes['lon'].extend(temp['lon'])
-                nodes['lat'].extend(temp['lat'])
+                nodes['lon'].extend(temp['lon'][1:])
+                nodes['lat'].extend(temp['lat'][1:])
         return nodes
     def __waternode(self, lon, lat, url):
         lon, lat = self.startpoint[0], self.startpoint[1]
         data = self.get_data(url)
-        nodes = dict(lon=[], lat=[])
+        nodes = dict(lon=lon, lat=lat)
         mask = self.data['mask_rho'][:]
         lon_rho = self.data['lon_rho'][:]
         lat_rho = self.data['lat_rho'][:]
@@ -209,18 +207,24 @@ class water_roms(water):
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
             index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats,num=9)
-            print index
-            print u_t
-            u_p = u_t[index[0], index[1]]
-            v_p = v_t[index[0], index[1]]
-            if not u_p and not v_p:
-                raise Exception('point hit the land')
-            dx = 24*60*60*float(u_p)
-            dy = 24*60*60*float(v_p)
+            print 'index', index
+            u_p = u_t[index]
+            v_p = v_t[index]
+            for ut, vt in zip(u_p, v_p):
+                print 'ut', ut
+                if ut:
+                    break
+            if not ut:
+                # raise Exception('point hit the land')
+                print 'point hit the land'
+                break
+            dx = 24*60*60*float(ut)
+            dy = 24*60*60*float(vt)
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
-            nodes['lon'].append(lon)
-            nodes['lat'].append(lat)
+            nodes['lon'] = np.append(nodes['lon'],lon)
+            nodes['lat'] = np.append(nodes['lat'],lat)
+        print nodes
         return nodes
 class water_fvcom(water):
     def __init__(self, modelname):

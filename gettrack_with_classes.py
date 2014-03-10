@@ -25,14 +25,14 @@ class figure_with_basemap(mpl.figure.Figure):
             column_num = 1
         else:
             column_num = 2
-        self.ax = plt.subplot(line_num,column_num,1)
+        self.ax = self.add_subplot(line_num,column_num,1)
         self.dmap = Basemap(projection='cyl',
-                            llcrnrlat=min(self.latsize)-0.01,
-                            urcrnrlat=max(self.latsize)+0.01,
-                            llcrnrlon=min(self.lonsize)-0.01,
-                            urcrnrlon=max(self.lonsize)+0.01,
+                            llcrnrlat=min(latsize)-0.01,
+                            urcrnrlat=max(latsize)+0.01,
+                            llcrnrlon=min(lonsize)-0.01,
+                            urcrnrlon=max(lonsize)+0.01,
                             resolution='h',ax=self.ax)
-        self.dmap.drawparallels(np.arange(int(min(self.latsize)),
+        self.dmap.drawparallels(np.arange(int(min(latsize)),
                                           int(max(latsize))+1,interval_lat),
                                 labels=[1,0,0,0])
         self.dmap.drawmeridians(np.arange(int(min(lonsize))-1,
@@ -53,17 +53,12 @@ class figure_with_basemap(mpl.figure.Figure):
 #        self.lonsize, self.latsize = size
     size = property(getSize)
 class water(object):
-    def __init__(self, startpoint, dataloc, modelname):
+    def __init__(self, startpoint):
         '''
         get startpoint of water, and the location of datafile.
         startpoint = [25,45]
-        dataloc = 'http://getfile.com/file.nc'
-        or
-        dataloc = '/net/usr/datafile.nc'
         '''
-        self.modelname = modelname
         self.startpoint = startpoint
-        self.dataloc = dataloc
     def get_data(self, dataloc):
         pass
     def bbox2ij(self, lons, lats, bbox):
@@ -79,6 +74,7 @@ class water(object):
         """
         bbox = np.array(bbox)
         mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
+        print mypath
         p = path.Path(mypath)
         points = np.vstack((lons.flatten(),lats.flatten())).T
         tshape = np.shape(lons)
@@ -118,7 +114,6 @@ class water(object):
         # index = np.where(temp==i)
         # min_dist=np.sqrt(dist[index])
         # return index[0]+j0, index[1]+i0
-        
         index = self.bbox2ij(lons, lats, bbox)
         lon_covered = lons[index]
         lat_covered = lats[index]
@@ -130,6 +125,7 @@ class water(object):
         dx = (lon-lon_covered)*cp
         dy = lat-lat_covered
         dist = dx*dx+dy*dy
+        '''
         dist_sort = np.sort(dist)[0:9]
         findex = np.where(dist==dist_sort[0])
         lists = [[]] * len(findex)
@@ -139,11 +135,13 @@ class water(object):
             for j in range(1,num):
                 t = np.where(dist==dist_sort[j])
                 for i in range(len(findex)):
-                    lists[i] = np.append(lists[i], t[i])
-            # data.append(np.where(dist=dist_sort[i]))
-        # i = np.argmin(dist)
+                     lists[i] = np.append(lists[i], t[i])
         indx = [i[lists] for i in index]
         return indx, dist_sort[0:num]
+        '''
+        mindist = np.argmin(dist)
+        indx = [i[mindist] for i in index]
+        return indx, dist[mindist]
     def waternode(self, timeperiod, data):
         pass
 class water_roms(water):
@@ -186,14 +184,13 @@ class water_roms(water):
         if type(url) is str:
             nodes = self.__waternode(lon, lat, url)
         else:
-            nodes = dict(lon=[self.startpoint[0]],lat=[self.startpoint[-1]])
+            nodes = dict(lon=[self.startpoint[0]],lat=[self.startpoint[1]])
             for i in url:
                 temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], i)
                 nodes['lon'].extend(temp['lon'][1:])
                 nodes['lat'].extend(temp['lat'][1:])
         return nodes
     def __waternode(self, lon, lat, url):
-        lon, lat = self.startpoint[0], self.startpoint[1]
         data = self.get_data(url)
         nodes = dict(lon=lon, lat=lat)
         mask = self.data['mask_rho'][:]
@@ -201,30 +198,41 @@ class water_roms(water):
         lat_rho = self.data['lat_rho'][:]
         u = self.data['u'][:,-1]
         v = self.data['v'][:,-1]
-        lons = jata.shrink(lon_rho, mask[1:,1:].shape)
-        lats = jata.shrink(lat_rho, mask[1:,1:].shape)
+        lons = jata.shrink(lon_rho, mask[1:].shape)
+        lats = jata.shrink(lat_rho, mask[1:].shape)
+        print self.days
         for i in range(0, self.days):
-            u_t = jata.shrink(u[i], mask[1:,1:].shape)
-            v_t = jata.shrink(v[i], mask[1:,1:].shape)
-            index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats,num=9)
-            print 'index', index
-            u_p = u_t[index]
-            v_p = v_t[index]
+            print i
+            u_t = jata.shrink(u[i], mask[1:].shape)
+            v_t = jata.shrink(v[i], mask[1:].shape)
+            index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+            print index
+            u_p = u_t[index[0]][index[1]]
+            v_p = v_t[index[0]][index[1]]
+            '''
             for ut, vt in zip(u_p, v_p):
-                print 'ut', ut
                 if ut:
                     break
             if not ut:
                 # raise Exception('point hit the land')
                 print 'point hit the land'
                 break
-            dx = 24*60*60*float(ut)
-            dy = 24*60*60*float(vt)
+            if not ut:
+                print 'point hit the land'
+                break
+            u_p = u_t[index[0]][index[1]]
+            v_p = v_t[index[0]][index[1]]
+            '''
+            if not u_p:
+                print 'point hit the land'
+                break
+            dx = 24*60*60*float(u_p)
+            dy = 24*60*60*float(v_p)
+            print u_p, v_p
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
             nodes['lon'] = np.append(nodes['lon'],lon)
             nodes['lat'] = np.append(nodes['lat'],lat)
-        print nodes
         return nodes
 class water_fvcom(water):
     def __init__(self, modelname):
@@ -484,16 +492,15 @@ class water_fvcom(water):
                                      'u','v','siglay','h')
         return self.data
     def waternode(self, lon, lat, depth, url):
-        try:
+        if type(url) is str:
             nodes = dict(lon=[lon],lat=[lat])
             temp = self.__waternode(lon, lat, url)
             nodes['lon'].extend(temp['lon'])
             nodes['lat'].extend(temp['lat'])
-        except(TypeError):
+        else:
             nodes = dict(lon=[lon],lat=[lat])
             for i in url:
-                temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1],
-                                        depth, i)
+                temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], depth, i)
                 nodes['lat'].extend(temp['lat'])
                 nodes['lon'].extend(temp['lon'])
         return nodes
@@ -503,7 +510,7 @@ class water_fvcom(water):
         data: a dict that has 'u' and 'v'
         '''
         data = self.get_data(url)
-        lonc,latc = data['lonc'][:], data['latc'][:]
+        lonc, latc = data['lonc'][:], data['latc'][:]
         lonv, latv = data['lon'][:], data['lat'][:]
         h = data['h'][:]
         siglay = data['siglay'][:]
@@ -521,8 +528,8 @@ class water_fvcom(water):
         for i in range(self.hours):
             # u_t = np.array(data['u'])[i,layer,kf]
             # v_t = np.array(data['v'])[i,layer,kf]
-            u_t = data['u'][i,layer,kf[0]]
-            v_t = data['v'][i,layer,kf[0]]
+            u_t = data['u'][i][layer][kf[0]]
+            v_t = data['v'][i][layer][kf[0]]
             dx = 60*60*u_t
             dy = 60*60*v_t
             lon = lon + (dx/(111111*np.cos(lat*np.pi/180)))
@@ -531,7 +538,7 @@ class water_fvcom(water):
             nodes['lat'].append(lat)
             kf, distanceF = self.nearest_point_index(lon, lat, lonc, latc)
             kv, distanceV = self.nearest_point_index(lon, lat, lonv, latv)
-            depth_total = siglay[:,kv]*h[kv]
+            # depth_total = siglay[:][kv]*h[kv]
             if distanceV>=.3:
                 if i==start:
                     print 'Sorry, your start position is NOT in the model domain'
@@ -572,7 +579,7 @@ class water_drifter(water):
         index = tdelta.index(min(tdelta))
         return index
 
-'''''''''''''''''''''''''''''''''''''''''
+'''
 modelname = 'ROMS'
 if modelname is 'drifter':
     # starttime = datetime(year=2013, month=9, day=29, hour=11, minute=46)
@@ -638,18 +645,21 @@ elif modelname is 'FVCOM':
     fig = figure_with_basemap(lonsize, latsize)
     fig.ax.plot(nodes['lon'], nodes['lat'], 'ro-')
     plt.show()
-'''''''''''''''''''''''''''''''''''
-
+'''
 
 #######################################
-drifter_id = jata.input_with_default('drifter_id', 110410712)
+# drifter_id = jata.input_with_default('drifter_id', 110410712)
+drifter_id = jata.input_with_default('drifter_id', 117400701)
 days = 2
 model = '30yr'
 # starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
 # starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
 # starttime = jata.input_with_default('start time', '2013-9-22 15:47')
-starttime = '2011-10-21 15:47'           #if used, make sure it's in drifter period
+
+starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
 starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
+
+# starttime = None
 depth = -1
 
 drifter = water_drifter(drifter_id)
@@ -666,20 +676,40 @@ lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
 
-# water_fvcom =  water_fvcom(model)
-# url_fvcom = water_fvcom.get_url(starttime, endtime)
-# nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
+water_fvcom =  water_fvcom(model)
+url_fvcom = water_fvcom.get_url(starttime, endtime)
+nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
 
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, url_roms)
+print 'nodes_roms', nodes_roms
+# print 'nodes_fvcom', nodes_fvcom
 
+'''
 lonsize = [-71.5,-69.5]
 latsize = [41,42]
-fig = figure_with_basemap(lonsize,latsize)
-fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
+# fig = figure_with_basemap(lonsize,latsize)
+# fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
+# fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
 # fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+'''
+
+'''
+fig = plt.figure()
+ax = fig.add_subplot(111)
+dmap = Basemap(projection='cyl',
+               llcrnrlat=min(latsize)-0.01, urcrnrlat=max(latsize)+0.01,
+               llcrnrlon=min(lonsize)-0.01, urcrnrlon=max(lonsize)+0.01,
+               resolution='h', ax=ax)
+dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1, 1),
+                   labels=[1,0,0,0])
+dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1, 1),
+                   labels=[0,0,0,1])
+dmap.drawcoastlines()
+dmap.fillcontinents(color='grey')
+dmap.drawmapboundary()
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.legend()
 plt.show()
+'''

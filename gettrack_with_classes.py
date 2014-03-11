@@ -25,7 +25,7 @@ class figure_with_basemap(mpl.figure.Figure):
             column_num = 1
         else:
             column_num = 2
-        self.ax = self.add_subplot(line_num,column_num,1)
+        self.ax = plt.subplot(line_num,column_num,1)
         self.dmap = Basemap(projection='cyl',
                             llcrnrlat=min(latsize)-0.01,
                             urcrnrlat=max(latsize)+0.01,
@@ -74,7 +74,6 @@ class water(object):
         """
         bbox = np.array(bbox)
         mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
-        print mypath
         p = path.Path(mypath)
         points = np.vstack((lons.flatten(),lats.flatten())).T
         tshape = np.shape(lons)
@@ -93,7 +92,7 @@ class water(object):
                 # p.append(point[index[i])
             # i0,i1,j0,j1 = min(index[1]),max(index[1]),min(index[0]),max(index[0])
             return index
-    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 10), num=1):
+    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 10)):
         '''
         Return the index of the nearest rho point.
         lon, lat: the coordiation of original point, float
@@ -125,7 +124,7 @@ class water(object):
         dx = (lon-lon_covered)*cp
         dy = lat-lat_covered
         dist = dx*dx+dy*dy
-        '''
+        ''' get several nearest points
         dist_sort = np.sort(dist)[0:9]
         findex = np.where(dist==dist_sort[0])
         lists = [[]] * len(findex)
@@ -155,10 +154,13 @@ class water_roms(water):
         # self.startpoint = lon, lat
         # self.dataloc = self.get_url(starttime)
     def get_url(self, starttime, endtime):
+        '''
+        get url according to starttime and endtime, maybe string or maybe lists.
+        '''
         self.startimes = starttime
-        self.days = int((endtime-starttime).total_seconds()/60/60/24)
-        time1 = datetime(year=2009,month=10,day=11)
-        time2 = datetime(year=2013,month=5,day=19)
+        self.days = int((endtime-starttime).total_seconds()/60/60/24)+1 # get the days
+        time1 = datetime(year=2009,month=10,day=11) # time of url1 that starts from
+        time2 = datetime(year=2013,month=5,day=19)  # time of url2 that starts from
         url1 = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2009_da/avg?lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
         url2 = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd?mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129]'
         if endtime >= time2:
@@ -177,9 +179,18 @@ class water_roms(water):
             url = url1.format(index1, index2)
         return url
     def get_data(self, url):
+        '''
+        return the data needed.
+        url is from water_roms.get_url(starttime, endtime)
+        '''
         self.data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho','u', 'v')
         return self.data
     def waternode(self, lon, lat, url):
+        '''
+        get the nodes of specific time period
+        lon, lat: start point
+        url: get from get_url(starttime, endtime)
+        '''
         self.startpoint = lon, lat
         if type(url) is str:
             nodes = self.__waternode(lon, lat, url)
@@ -191,6 +202,9 @@ class water_roms(water):
                 nodes['lat'].extend(temp['lat'][1:])
         return nodes
     def __waternode(self, lon, lat, url):
+        '''
+        return points
+        '''
         data = self.get_data(url)
         nodes = dict(lon=lon, lat=lat)
         mask = self.data['mask_rho'][:]
@@ -200,13 +214,11 @@ class water_roms(water):
         v = self.data['v'][:,-1]
         lons = jata.shrink(lon_rho, mask[1:].shape)
         lats = jata.shrink(lat_rho, mask[1:].shape)
-        print self.days
         for i in range(0, self.days):
             print i
             u_t = jata.shrink(u[i], mask[1:].shape)
             v_t = jata.shrink(v[i], mask[1:].shape)
             index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
-            print index
             u_p = u_t[index[0]][index[1]]
             v_p = v_t[index[0]][index[1]]
             '''
@@ -228,7 +240,6 @@ class water_roms(water):
                 break
             dx = 24*60*60*float(u_p)
             dy = 24*60*60*float(v_p)
-            print u_p, v_p
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
             nodes['lon'] = np.append(nodes['lon'],lon)
@@ -267,6 +278,10 @@ class water_fvcom(water):
         #     raise Exception('Please use right model')
         # self.index = [index1, index2]
     def get_url(self, starttime, endtime):
+        '''
+        get different url according to starttime and endtime.
+        urls are monthly.
+        '''
         self.hours = int((endtime-starttime).total_seconds()/60/60)
         if self.modelname is "30yr":
             url = []
@@ -550,6 +565,11 @@ class water_drifter(water):
         self.drifter_id = drifter_id
         # self.starttime = starttime
     def waternode(self, starttime=None, days=None):
+        '''
+        return drifter nodes
+        if starttime is given, return nodes started from starttime
+        if both starttime and days are given, return nodes of the specific time period
+        '''
         # self.drifter_id = jata.input_with_default('drifter ID', 139420691)
         # self.starttime = datetime(year=2013, month=9, day=29, hour=11,minute=46)
         # nodes = jata.data_extracted(self.dataloc, self.drifter_id, self.starttime)
@@ -573,6 +593,9 @@ class water_drifter(water):
                 nodes['time'] = nodes['time'][i:-1]
         return nodes
     def __cmptime(self, time, times):
+        '''
+        return indies of specific or nearest time in times.
+        '''
         tdelta = []
         for t in times:
             tdelta.append(abs((time-t).total_seconds()))
@@ -650,7 +673,7 @@ elif modelname is 'FVCOM':
 #######################################
 # drifter_id = jata.input_with_default('drifter_id', 110410712)
 drifter_id = jata.input_with_default('drifter_id', 117400701)
-days = 2
+days = 10
 model = '30yr'
 # starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
 # starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
@@ -684,24 +707,17 @@ water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, url_roms)
 print 'nodes_roms', nodes_roms
-# print 'nodes_fvcom', nodes_fvcom
+print 'nodes_fvcom', nodes_fvcom
 
-'''
+
 lonsize = [-71.5,-69.5]
-latsize = [41,42]
-# fig = figure_with_basemap(lonsize,latsize)
-# fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-# fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
-# fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
-'''
+latsize = [37,42]
 
-'''
-fig = plt.figure()
-ax = fig.add_subplot(111)
+fig = figure_with_basemap(lonsize, latsize)
 dmap = Basemap(projection='cyl',
                llcrnrlat=min(latsize)-0.01, urcrnrlat=max(latsize)+0.01,
                llcrnrlon=min(lonsize)-0.01, urcrnrlon=max(lonsize)+0.01,
-               resolution='h', ax=ax)
+               resolution='h', ax=fig.ax)
 dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1, 1),
                    labels=[1,0,0,0])
 dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1, 1),
@@ -709,7 +725,10 @@ dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1, 1),
 dmap.drawcoastlines()
 dmap.fillcontinents(color='grey')
 dmap.drawmapboundary()
+fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
+fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
+fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.legend()
 plt.show()
-'''
+

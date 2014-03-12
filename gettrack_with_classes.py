@@ -146,8 +146,11 @@ class water(object):
 class water_roms(water):
     '''
     use two urls:
+        ####old####
         (2009.10.11, 2013.05.19):version1(old) 2009-2013
         (2013.05.19, present): version2(new) 2013-present
+        ####new####
+        (2006.01.01.01:00, present)
     '''
     def __init__(self):
         pass
@@ -157,8 +160,9 @@ class water_roms(water):
         '''
         get url according to starttime and endtime, maybe string or maybe lists.
         '''
-        self.startimes = starttime
-        self.days = int((endtime-starttime).total_seconds()/60/60/24)+1 # get the days
+        '''
+        self.starttime = starttime
+        self.days = int((endtime-starttime).total_seconds()/60/60/24)+1 # get total days
         time1 = datetime(year=2009,month=10,day=11) # time of url1 that starts from
         time2 = datetime(year=2013,month=5,day=19)  # time of url2 that starts from
         url1 = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2009_da/avg?lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
@@ -178,13 +182,22 @@ class water_roms(water):
             index2 = index1 + self.days
             url = url1.format(index1, index2)
         return url
+        '''
+        self.starttime = starttime
+        self.hours = int((endtime-starttime).total_seconds()/60/60) # get total hours
+        time_r = datetime(year=2006,month=1,day=9,hour=1,minute=0)
+        index1 = (starttime - time_r).total_seconds()/60/60
+        index2 = index1 + self.hours
+        url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2006_da/his?lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
+        url = url.format(index1, index2)
+        return url
     def get_data(self, url):
         '''
         return the data needed.
         url is from water_roms.get_url(starttime, endtime)
         '''
-        self.data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho','u', 'v')
-        return self.data
+        data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho','u', 'v')
+        return data
     def waternode(self, lon, lat, url):
         '''
         get the nodes of specific time period
@@ -205,20 +218,23 @@ class water_roms(water):
         '''
         return points
         '''
-        data = self.get_data(url)
+        self.data = self.get_data(url)
         nodes = dict(lon=lon, lat=lat)
         mask = self.data['mask_rho'][:]
         lon_rho = self.data['lon_rho'][:]
         lat_rho = self.data['lat_rho'][:]
-        u = self.data['u'][:,-1]
-        v = self.data['v'][:,-1]
-        lons = jata.shrink(lon_rho, mask[1:].shape)
-        lats = jata.shrink(lat_rho, mask[1:].shape)
-        for i in range(0, self.days):
+        u = self.data['u'][:][-1]
+        v = self.data['v'][:][-1]
+        lons = jata.shrink(lon_rho, mask[1:][1:].shape)
+        lats = jata.shrink(lat_rho, mask[1:][1:].shape)
+        print 'lons', len(lons),len(lons[0])
+        for i in range(0, self.hours):
             print i
-            u_t = jata.shrink(u[i], mask[1:].shape)
-            v_t = jata.shrink(v[i], mask[1:].shape)
+            u_t = jata.shrink(u[i], mask[1:][1:].shape)
+            v_t = jata.shrink(v[i], mask[1:][1:].shape)
             index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+            print 'index', index
+            print 'u_t', len(u_t), len(u_t[0])
             u_p = u_t[index[0]][index[1]]
             v_p = v_t[index[0]][index[1]]
             '''
@@ -673,7 +689,7 @@ elif modelname is 'FVCOM':
 #######################################
 # drifter_id = jata.input_with_default('drifter_id', 110410712)
 drifter_id = jata.input_with_default('drifter_id', 117400701)
-days = 10
+days = 3
 model = '30yr'
 # starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
 # starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
@@ -698,16 +714,16 @@ else:
 lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
-
+'''
 water_fvcom =  water_fvcom(model)
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
-
+'''
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, url_roms)
 print 'nodes_roms', nodes_roms
-print 'nodes_fvcom', nodes_fvcom
+# print 'nodes_fvcom', nodes_fvcom
 
 
 lonsize = [-71.5,-69.5]
@@ -727,7 +743,7 @@ dmap.fillcontinents(color='grey')
 dmap.drawmapboundary()
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
-fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+# fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.legend()
 plt.show()

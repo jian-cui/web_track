@@ -188,6 +188,7 @@ class water_roms(water):
         time_r = datetime(year=2006,month=1,day=9,hour=1,minute=0)
         index1 = (starttime - time_r).total_seconds()/60/60
         index2 = index1 + self.hours
+        print 'time', index1, index2
         url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2006_da/his?lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
         url = url.format(index1, index2)
         return url
@@ -223,15 +224,15 @@ class water_roms(water):
         mask = self.data['mask_rho'][:]
         lon_rho = self.data['lon_rho'][:]
         lat_rho = self.data['lat_rho'][:]
-        u = self.data['u'][:][-1]
-        v = self.data['v'][:][-1]
-        lons = jata.shrink(lon_rho, mask[1:][1:].shape)
-        lats = jata.shrink(lat_rho, mask[1:][1:].shape)
+        u = self.data['u'][:,-1]
+        v = self.data['v'][:,-1]
+        lons = jata.shrink(lon_rho, mask[1:,1:].shape)
+        lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         print 'lons', len(lons),len(lons[0])
         for i in range(0, self.hours):
-            print i
-            u_t = jata.shrink(u[i], mask[1:][1:].shape)
-            v_t = jata.shrink(v[i], mask[1:][1:].shape)
+            print 'roms',i
+            u_t = jata.shrink(u[i], mask[1:,1:].shape)
+            v_t = jata.shrink(v[i], mask[1:,1:].shape)
             index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
             print 'index', index
             print 'u_t', len(u_t), len(u_t[0])
@@ -254,8 +255,8 @@ class water_roms(water):
             if not u_p:
                 print 'point hit the land'
                 break
-            dx = 24*60*60*float(u_p)
-            dy = 24*60*60*float(v_p)
+            dx = 60*60*float(u_p)
+            dy = 60*60*float(v_p)
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
             nodes['lon'] = np.append(nodes['lon'],lon)
@@ -525,7 +526,7 @@ class water_fvcom(water):
     def waternode(self, lon, lat, depth, url):
         if type(url) is str:
             nodes = dict(lon=[lon],lat=[lat])
-            temp = self.__waternode(lon, lat, url)
+            temp = self.__waternode(lon, lat, depth, url)
             nodes['lon'].extend(temp['lon'])
             nodes['lat'].extend(temp['lat'])
         else:
@@ -714,17 +715,16 @@ else:
 lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
-'''
+
 water_fvcom =  water_fvcom(model)
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
-'''
+
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, url_roms)
 print 'nodes_roms', nodes_roms
-# print 'nodes_fvcom', nodes_fvcom
-
+print 'nodes_fvcom', nodes_fvcom
 
 lonsize = [-71.5,-69.5]
 latsize = [37,42]
@@ -743,7 +743,7 @@ dmap.fillcontinents(color='grey')
 dmap.drawmapboundary()
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
-# fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.legend()
 plt.show()

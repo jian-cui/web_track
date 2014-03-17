@@ -13,13 +13,12 @@ from getdata import getdrift
 import calendar
 
 class figure_with_basemap(mpl.figure.Figure):
-    def __init__(self,lonsize,latsize,axes_num=1,interval_lon=1,interval_lat=1):
+    def __init__(self,lonsize,latsize,axes_num=1,interval_lon=0.5,interval_lat=0.5):
         '''
         draw the Basemap, set the axes num in the figure
         '''
         super(figure_with_basemap, self).__init__()
         self.lonsize, self.latsize = lonsize, latsize
-        # self.fig = plt.figure()
         line_num = jmath.smallest_multpr(2,axes_num)
         if line_num == 1:
             column_num = 1
@@ -146,10 +145,10 @@ class water(object):
 class water_roms(water):
     '''
     use two urls:
-        ####old####
+        ####old, dayly####
         (2009.10.11, 2013.05.19):version1(old) 2009-2013
         (2013.05.19, present): version2(new) 2013-present
-        ####new####
+        ####new, hourly####
         (2006.01.01.01:00, present)
     '''
     def __init__(self):
@@ -314,7 +313,7 @@ class water_fvcom(water):
                                                  '%Y-%m-%d %H:%M:%S')
                 index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+self.hours
                 index2 = index1 + self.hours
-                furl = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?h[0:1:48450],lat[0:1:48450],latc[0:1:90414],lon[0:1:48450],lonc[0:1:90414],u[{0}:1:{1}][0:1:44][0:1:90414],v[{0}:1:{1}][0:1:44][0:1:90414]'
+                furl = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?h[0:1:48450],lat[0:1:48450],latc[0:1:90414],lon[0:1:48450],lonc[0:1:90414],u[{0}:1:{1}][0:1:44][0:1:90414],v[{0}:1:{1}][0:1:44][0:1:90414],siglay'
                 url.append(furl.format(index1, index2)) 
             elif time1 <= endtime < time2: # endtime is in GOM3_v11
                 url.extend(self.__temp(starttime,endtime,time1,time2))
@@ -687,16 +686,16 @@ elif modelname is 'FVCOM':
     plt.show()
 '''
 
-#######################################
-# drifter_id = jata.input_with_default('drifter_id', 110410712)
-drifter_id = jata.input_with_default('drifter_id', 117400701)
+#######################################110410712,117400701 
+# drifter_id = jata.input_with_default('drifter_id', )
+drifter_id = jata.input_with_default('drifter_id', 97106)
 days = 3
 model = '30yr'
 # starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
 # starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
-# starttime = jata.input_with_default('start time', '2013-9-22 15:47')
 
-starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
+# starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
+starttime = '2009-07-13 00:00'
 starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
 
 # starttime = None
@@ -727,24 +726,12 @@ print 'nodes_roms', nodes_roms
 print 'nodes_fvcom', nodes_fvcom
 
 lonsize = [-71.5,-69.5]
-latsize = [37,42]
+latsize = [41,42.5]
 
 fig = figure_with_basemap(lonsize, latsize)
-dmap = Basemap(projection='cyl',
-               llcrnrlat=min(latsize)-0.01, urcrnrlat=max(latsize)+0.01,
-               llcrnrlon=min(lonsize)-0.01, urcrnrlon=max(lonsize)+0.01,
-               resolution='h', ax=fig.ax)
-dmap.drawparallels(np.arange(int(min(latsize)),int(max(latsize))+1, 1),
-                   labels=[1,0,0,0])
-dmap.drawmeridians(np.arange(int(min(lonsize)),int(max(lonsize))+1, 1),
-                   labels=[0,0,0,1])
-dmap.drawcoastlines()
-dmap.fillcontinents(color='grey')
-dmap.drawmapboundary()
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
 fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.legend()
 plt.show()
-

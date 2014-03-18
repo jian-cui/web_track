@@ -618,6 +618,22 @@ class water_drifter(water):
         index = tdelta.index(min(tdelta))
         return index
 
+def min_data(*args):
+    '''
+    return the minimum of several lists
+    '''
+    data = []
+    for i in range(len(args)):
+        data.append(min(args[i]))
+    return min(data)
+def max_data(*args):
+    '''
+    return the maximum of several lists
+    '''
+    data = []
+    for i in range(len(args)):
+        data.append(max(args[i]))
+    return max(data)
 '''
 modelname = 'ROMS'
 if modelname is 'drifter':
@@ -688,14 +704,14 @@ elif modelname is 'FVCOM':
 
 #######################################110410712,117400701 
 # drifter_id = jata.input_with_default('drifter_id', )
-drifter_id = jata.input_with_default('drifter_id', 97106)
+drifter_id = jata.input_with_default('drifter_id', 106410712)
 days = 3
 model = '30yr'
 # starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
 # starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
 
 # starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
-starttime = '2009-07-13 00:00'
+starttime = '2010-07-25 00:00'
 starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
 
 # starttime = None
@@ -725,13 +741,16 @@ nodes_roms = water_roms.waternode(lon, lat, url_roms)
 print 'nodes_roms', nodes_roms
 print 'nodes_fvcom', nodes_fvcom
 
-lonsize = [-71.5,-69.5]
-latsize = [41,42.5]
+lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])-1,
+           max_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])+1]
+latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])-1,
+           max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+1]
 
 fig = figure_with_basemap(lonsize, latsize)
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
 fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
+plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend()
 plt.show()

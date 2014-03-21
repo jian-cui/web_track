@@ -188,7 +188,7 @@ class water_roms(water):
         index1 = (starttime - time_r).total_seconds()/60/60
         index2 = index1 + self.hours
         print 'time', index1, index2
-        url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2006_da/his?lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
+        url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2006_da/his?h[0:1:81][0:1:129],s_rho[0:1:35],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
         url = url.format(index1, index2)
         return url
     def get_data(self, url):
@@ -196,35 +196,39 @@ class water_roms(water):
         return the data needed.
         url is from water_roms.get_url(starttime, endtime)
         '''
-        data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho','u', 'v')
+        data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'mask_rho','u', 'v', 'h', 's_rho')
         return data
-    def waternode(self, lon, lat, url):
+    def waternode(self, lon, lat, depth, url):
         '''
         get the nodes of specific time period
         lon, lat: start point
         url: get from get_url(starttime, endtime)
+        depth: 0~35, the 36th is the bottom.
         '''
         self.startpoint = lon, lat
         if type(url) is str:
-            nodes = self.__waternode(lon, lat, url)
+            nodes = self.__waternode(lon, lat, depth, url)
         else:
             nodes = dict(lon=[self.startpoint[0]],lat=[self.startpoint[1]])
             for i in url:
-                temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], i)
+                temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], depth, i)
                 nodes['lon'].extend(temp['lon'][1:])
                 nodes['lat'].extend(temp['lat'][1:])
         return nodes
-    def __waternode(self, lon, lat, url):
+    def __waternode(self, lon, lat, depth, url):
         '''
         return points
         '''
-        self.data = self.get_data(url)
+        data = self.get_data(url)
         nodes = dict(lon=lon, lat=lat)
         mask = self.data['mask_rho'][:]
         lon_rho = self.data['lon_rho'][:]
         lat_rho = self.data['lat_rho'][:]
-        u = self.data['u'][:,-1]
-        v = self.data['v'][:,-1]
+        index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+        depth_layers = data['h'][index[0]][index[1]]*data['s_rho']
+        layer = np.argmin(abs(depth_layer-depth))
+        u = data['u'][:,layer]
+        v = data['v'][:,layer]
         lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         print 'lons', len(lons),len(lons[0])
@@ -232,7 +236,7 @@ class water_roms(water):
             print 'roms',i
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
-            index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+            # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
             print 'index', index
             print 'u_t', len(u_t), len(u_t[0])
             u_p = u_t[index[0]][index[1]]
@@ -258,6 +262,7 @@ class water_roms(water):
             dy = 60*60*float(v_p)
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
+            index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats))
             nodes['lon'] = np.append(nodes['lon'],lon)
             nodes['lat'] = np.append(nodes['lat'],lat)
         return nodes
@@ -711,7 +716,7 @@ starttime = '2010-07-25 00:00'
 starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
 
 # starttime = None
-depth = -1
+
 
 drifter = water_drifter(drifter_id)
 if starttime:
@@ -727,13 +732,15 @@ lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
 
+depth = -1
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
 
+d = 35
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
-nodes_roms = water_roms.waternode(lon, lat, url_roms)
+nodes_roms = water_roms.waternode(lon, lat, d, url_roms)
 print 'nodes_roms', nodes_roms
 print 'nodes_fvcom', nodes_fvcom
 

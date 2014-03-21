@@ -5,7 +5,7 @@ import numpy as np
 import jata
 
 # url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd?h[0:1:81][0:1:129],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129]'
-url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd?h[0:1:81][0:1:129],temp[0:1:296][0:1:35][0:1:81][0:1:129],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129]'
+url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd?h[0:1:81][0:1:129],temp[0:1:307][0:1:35][0:1:81][0:1:129],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129]'
 data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'h', 'temp')
 lonsize = np.amin(data['lon_rho'][:])-1, np.amax(data['lon_rho'][:])+1
 latsize = np.amin(data['lat_rho'][:])-1, np.amax(data['lat_rho'][:])+1

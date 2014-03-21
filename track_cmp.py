@@ -714,7 +714,7 @@ days = 3
 # starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
 starttime = '2010-07-25 00:00'
 starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
-
+depth = -1
 # starttime = None
 
 
@@ -732,15 +732,13 @@ lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
 
-depth = -1
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
 
-d = 35
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
-nodes_roms = water_roms.waternode(lon, lat, d, url_roms)
+nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
 print 'nodes_roms', nodes_roms
 print 'nodes_fvcom', nodes_fvcom
 

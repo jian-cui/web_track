@@ -93,15 +93,14 @@ class water(object):
                 # p.append(point[index[i])
             # i0,i1,j0,j1 = min(index[1]),max(index[1]),min(index[0]),max(index[0])
             return index
-    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 10)):
+    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 1)):
         '''
         Return the index of the nearest rho point.
         lon, lat: the coordinate of start point, float
         lats, lons: the coordinate of points to be calculated.
         length: the boundary box.
         '''
-        l = length[0]/2, length[1]/2
-        bbox = [lon-l[0], lon+l[0], lat-l[1], lat+l[1]]
+        bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
         # i0, i1, j0, j1 = self.bbox2ij(lons, lats, bbox)
         # lon_covered = lons[j0:j1+1, i0:i1+1]
         # lat_covered = lats[j0:j1+1, i0:i1+1]
@@ -221,17 +220,19 @@ class water_roms(water):
         '''
         data = self.get_data(url)
         nodes = dict(lon=lon, lat=lat)
-        mask = self.data['mask_rho'][:]
-        lon_rho = self.data['lon_rho'][:]
-        lat_rho = self.data['lat_rho'][:]
-        index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
-        depth_layers = data['h'][index[0]][index[1]]*data['s_rho']
-        layer = np.argmin(abs(depth_layer-depth))
-        u = data['u'][:,layer]
-        v = data['v'][:,layer]
+        mask = data['mask_rho'][:]
+        lon_rho = data['lon_rho'][:]
+        lat_rho = data['lat_rho'][:]
         lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         lats = jata.shrink(lat_rho, mask[1:,1:].shape)
-        print 'lons', len(lons),len(lons[0])
+        index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+        depth_layers = data['h'][index[0]][index[1]]*data['s_rho']
+        layer = np.argmin(abs(depth_layers-depth))
+        u = data['u'][:,layer]
+        v = data['v'][:,layer]
+        # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
+        # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
+        
         for i in range(0, self.hours):
             print 'roms',i
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
@@ -262,7 +263,7 @@ class water_roms(water):
             dy = 60*60*float(v_p)
             lon = lon + dx/(111111*np.cos(lat*np.pi/180))
             lat = lat + dy/111111
-            index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats))
+            index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
             nodes['lon'] = np.append(nodes['lon'],lon)
             nodes['lat'] = np.append(nodes['lat'],lat)
         return nodes
@@ -533,6 +534,7 @@ class water_fvcom(water):
         else:
             nodes = dict(lon=[lon],lat=[lat])
             for i in url:
+                print i
                 temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], depth, i)
                 nodes['lat'].extend(temp['lat'])
                 nodes['lon'].extend(temp['lon'])

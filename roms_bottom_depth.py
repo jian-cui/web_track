@@ -11,7 +11,6 @@ lonsize = np.amin(data['lon_rho'][:])-1, np.amax(data['lon_rho'][:])+1
 latsize = np.amin(data['lat_rho'][:])-1, np.amax(data['lat_rho'][:])+1
 
 
-'''
 fig = plt.figure()
 ax = plt.subplot(111)
 dmap = Basemap(projection = 'cyl',
@@ -32,6 +31,7 @@ cs = plt.contourf(data['lon_rho'], data['lat_rho'], data['h'], range(0,400),
                   extend='both')
 plt.colorbar()
 # plt.clabel(cs, inline=0, fontsize=10)
+plt.show()
 '''
 # fig, axes = plt.subplots(nrows=2, ncols=1,sharex=True,sharey=True)
 fig = plt.figure()
@@ -76,3 +76,4 @@ cs2 = ax2.contourf(data['lon_rho'], data['lat_rho'], data['temp'][296,0], 100)
 # fig.colorbar(cs2)
 plt.colorbar(cs2)
 plt.show()
+'''

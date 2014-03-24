@@ -15,7 +15,7 @@ import calendar
 class figure_with_basemap(mpl.figure.Figure):
     def __init__(self,lonsize,latsize,axes_num=1,interval_lon=0.5,interval_lat=0.5):
         '''
-        draw the Basemap, set the axes num in the figure
+        draw the Basemap, set the number of panels in the figure
         '''
         super(figure_with_basemap, self).__init__()
         self.lonsize, self.latsize = lonsize, latsize
@@ -43,13 +43,12 @@ class figure_with_basemap(mpl.figure.Figure):
         # self.cid = self.canvas.mpl_connect('button_press_event',
                                            # self.on_left_button_down)
     def on_left_button_down(self, event):
+        # not necessary but here to demonstrate the action of clicking on the map
         if event.button == 1:
             x, y = event.xdata, event.ydata
             print 'You clicked: %f, %f' % (x, y)
     def getSize(self):
         return self.lonsize, self.latsize
-#    def setSize(self, size):
-#        self.lonsize, self.latsize = size
     size = property(getSize)
 class water(object):
     def __init__(self, startpoint):
@@ -62,10 +61,10 @@ class water(object):
         pass
     def bbox2ij(self, lons, lats, bbox):
         """
-        Return tuple of indices of pointsthat are completely covered by the 
+        Return tuple of indices of points that are completely covered by the 
         specific boundary box.
         i = bbox2ij(lon,lat,bbox)
-        lon,lat = 2D arrays that are the target of the subset, type: np.ndarray
+        lons,lats = 2D arrays (list) that are the target of the subset, type: np.ndarray
         bbox = list containing the bounding box: [lon_min, lon_max, lat_min, lat_max]
     
         Example
@@ -207,13 +206,13 @@ class water_roms(water):
         self.startpoint = lon, lat
         if type(url) is str:
             nodes = self.__waternode(lon, lat, depth, url)
-        else:
+        else: # case where there are two urls, one for start and one for stop time
             nodes = dict(lon=[self.startpoint[0]],lat=[self.startpoint[1]])
             for i in url:
                 temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], depth, i)
                 nodes['lon'].extend(temp['lon'][1:])
                 nodes['lat'].extend(temp['lat'][1:])
-        return nodes
+        return nodes # dictionary of lat and lon
     def __waternode(self, lon, lat, depth, url):
         '''
         return points
@@ -234,12 +233,9 @@ class water_roms(water):
         # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         
         for i in range(0, self.hours):
-            print 'roms',i
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
             # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
-            print 'index', index
-            print 'u_t', len(u_t), len(u_t[0])
             u_p = u_t[index[0]][index[1]]
             v_p = v_t[index[0]][index[1]]
             '''
@@ -270,32 +266,6 @@ class water_roms(water):
 class water_fvcom(water):
     def __init__(self):
         self.modelname = '30yr'
-        # if self.modelname is '30yr':
-        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
-        #                    ','.join(datakeys)
-        #     yearnum = starttime.year-1981
-        #     standardtime = datetime.strptime(str(starttime.year)+'-01-01 00:00:00',
-        #                                      '%Y-%m-%d %H:%M:%S')
-        #     index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+\
-        #               24*(starttime-standardtime).days
-        #     index2 = index1+24*self.days
-        # elif self.modelname is 'GOM3':
-        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?'+\
-        #                    ','.join(datakeys)
-        #     period = (starttime+timedelta(days=self.days))-\
-        #               (datetime.now()-timedelta(days=3))
-        #     index1 = (period.seconds)/60/60
-        #     index2 = index1 + 24*(self.days)
-        # elif self.modelname is 'massbay':
-        #     self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?'+\
-        #                    ','.join(datakeys)
-        #     period = (starttime+timedelta(days=self.days))-\
-        #              (datetime.now()-timedelta(days=3))
-        #     index1 = (period.seconds)/60/60
-        #     index2 = index1+24*self.days
-        # else:
-        #     raise Exception('Please use right model')
-        # self.index = [index1, index2]
     def get_url(self, starttime, endtime):
         '''
         get different url according to starttime and endtime.
@@ -320,78 +290,10 @@ class water_fvcom(water):
                 url.append(furl.format(index1, index2)) 
             elif time1 <= endtime < time2: # endtime is in GOM3_v11
                 url.extend(self.__temp(starttime,endtime,time1,time2))
-                # if starttime > time1:
-                #     if starttime.month == endtime.month:
-                #         url.append(__url(11,starttime.month,
-                #                                [starttime.day, starttime.hour],
-                #                                [endtime.day, endtime.hour]))
-                #     else:
-                #         for i in range(starttime.month, endtime.month+1):
-                #             if i == starttime.month:
-                #                 url.append(__url(11,i,
-                #                                        [starttime.day,starttime.hour],
-                #                                        [calendar.monthrange(2011,i)[1],0]))
-                #             elif starttime.month < i < endtime.month:
-                #                 url.append(__url(11,i,[0,0],
-                #                                        [calendar.monthrange(2011,i)[1],0]))
-                #             elif i == endtime.month:
-                #                 url.append(__url(11,i,[0,0],
-                #                                        [endtime.day,endtime.hour]))
-                # elif starttime <= time1: # start time  is from 1978 to 2010
-                #     url.extend(get_url(starttime, time1))
-                #     url.extend(get_url(time1+timedelta(days=1), endtime))
             elif time2 <= endtime < time3:  # endtime is in GOM3_v12
                 url.extend(self.__temp(starttime,endtime,time2,time3))
-                # if starttime > time2:    #start time is from 2011.11.10 as v12
-                #     if starttime.month == endtime.month:
-                #         url.append(__url(starttime.year,starttime.month,
-                #                                [starttime.day,starttime.hour],
-                #                                [endtime.day,endtime.hour]))
-                #     else:
-                #         if starttime.year == endtime.year:
-                #             y = starttime.year
-                #             for i in range(starttime.month, endtime.month+1):
-                #                 if i == starttime.month:
-                #                     url.append(__url(y,i,
-                #                                            [starttime.month, starttime.hour],
-                #                                            [calender.monthrange(y,i)[1],0]))
-                #                 elif starttime.month < i < endtime.month:
-                #                     url.append(__url(y,i,[0,0],
-                #                                            [calendar.monthrange(y,i)[1],0]))
-                #                 elif i == endtime.month:
-                #                     url.append(__url(y,i,[0,0],
-                #                                            [endtime.day,endtime.hour]))
-                #         else:
-                #             for i in range(starttime.year, endtime.year+1):
-                #                 if i == starttime.year:
-                #                     url.extend(get_url(starttime,
-                #                                        datetime(year=i,
-                #                                                 month=12,day=31)))
-                #                 elif i == endtime.year:
-                #                     url.extend(get_url(datetime(year=i,month=1,day=1),
-                #                                        endtime))
-                #                 else:
-                #                     url.extend(get_url(datetime(year=i,month=1,day=1),
-                #                                        datetime(year=i,month=12,day=31)))
-                     
-                # else:
-                #     url.extend(get_url(starttime,time2))
-                #     url.extend(get_url(datetime(year=2011,month=11,day=11),endtime))
             elif time3 <= endtime < time4:
                 url.extend(self.__temp(starttime,endtime,time3,time4))
-                # if starttime > time3:
-                #     if starttime.month == endtime.month:
-                #         url.append(__url(starttime.year,starttime.month,
-                #                                [starttime.day,starttime.hour],
-                #                                [endtime.day,endtime.hour]))
-                #     else:
-                #         y = starttime.year
-                #         for i in range(starttime.month, endtime.month+1):
-                #             if i == starttime.month:
-                #                 url.append(__url(y,i,
-                #                                        [starttime.month,starttime.hour],
-                #                                        [calender.monthrange(y,i)[1],0]))
-                #             elif
         elif self.modelname is "GOM3":
             url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],siglay[0:1:39][0:1:51215],h[0:1:51215],u[{0}:1:{1}][0:1:39][0:1:95721],v[{0}:1:{1}][0:1:39][0:1:95721]'
             period = starttime-\
@@ -450,7 +352,6 @@ class water_fvcom(water):
             # url.extend(self.get_url(datetime(year=2011,month=11,day=10),endtime))
             url.extend(self.get_url(time1,endtime))
         return url
-
     def __url(self, year, month, start_daytime, end_daytime):
         '''
         start_daytime,end_daytime: [day,hour]
@@ -490,37 +391,6 @@ class water_fvcom(water):
         elif version == '13':
             url = url_v13.format(year, month, start, end)
         return url
-    # def get_interval(self, starttime):
-    #     '''
-    #     starttime: datetime.datetime()
-    #     '''
-    #     days_int = self.days
-    #     days_datetime = timedelta(days=self.days)
-    #     datakeys = ('u', 'v', 'lon', 'lat', 'lonc', 'latc', 'siglay', 'h')
-    #     if self.modelname is '30yr':
-    #         self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
-    #                        ','.join(datakeys)
-    #         yearnum = starttime.year-1981
-    #         standardtime = datetime.strptime(str(starttime.year)+'-01-01 00:00:00',
-    #                                          '%Y-%m-%d %H:%M:%S')
-    #         index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+\
-    #                   24*(starttime-standardtime).days
-    #         index2 = index1+24*days_int
-    #     elif self.modelname is 'GOM3':
-    #         self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?'+\
-    #                        ','.join(datakeys)
-    #         period = (starttime+days_datetime)-(datetime.now()-timedelta(days=3))
-    #         index1 = (period.seconds)/60/60
-    #         index2 = index1 + 24*(days_int)
-    #     elif self.modelname is 'massbay':
-    #         self.dataloc = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?'+\
-    #                        ','.join(datakeys)
-    #         period = (starttime+days_datetime)-(datetime.now()-timedelta(days=3))
-    #         index1 = (period.seconds)/60/60
-    #         index2 = index1+24*days_int
-    #     else:
-    #         raise Exception('Please use right model')
-    #     return self.dataloc, [index1, index2]
     def get_data(self,url):
         self.data = jata.get_nc_data(url,'lon','lat','latc','lonc',
                                      'u','v','siglay','h')
@@ -563,8 +433,8 @@ class water_fvcom(water):
         for i in range(self.hours):
             # u_t = np.array(data['u'])[i,layer,kf]
             # v_t = np.array(data['v'])[i,layer,kf]
-            u_t = data['u'][i][layer][kf[0]]
-            v_t = data['v'][i][layer][kf[0]]
+            u_t = data['u'][i, layer, kf[0]]
+            v_t = data['v'][i, layer, kf[0]]
             dx = 60*60*u_t
             dy = 60*60*v_t
             lon = lon + (dx/(111111*np.cos(lat*np.pi/180)))
@@ -740,10 +610,10 @@ nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
 print 'nodes_roms', nodes_roms
 print 'nodes_fvcom', nodes_fvcom
 
-lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])-1,
-           max_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])+1]
-latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])-1,
-           max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+1]
+lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])-0.5,
+           max_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])+0.5]
+latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])-0.5,
+           max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+0.5]
 
 fig = figure_with_basemap(lonsize, latsize)
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')

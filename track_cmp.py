@@ -706,20 +706,17 @@ elif modelname is 'FVCOM':
     plt.show()
 '''
 
-#######################################110410712,117400701 
-# drifter_id = jata.input_with_default('drifter_id', )
-drifter_id = jata.input_with_default('drifter_id', 106410712)
+#######################################110410712,117400701
+drifter_id = 106410712
 days = 3
-# starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
-# starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
-
-# starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
-starttime = '2010-07-25 00:00'
-starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
 depth = -1
-# starttime = None
+starttime = '2010-07-25 00:00'
+# (This line is not useful)starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+# starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
+# starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
+starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
 
-
+drifter_id = jata.input_with_default('drifter_id', drifter_id)
 drifter = water_drifter(drifter_id)
 if starttime:
     if days:
@@ -728,7 +725,6 @@ if starttime:
         nodes_drifter = drifter.waternode(starttime)
 else:
     nodes_drifter = drifter.waternode()
-
 
 lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]

@@ -7,11 +7,14 @@ tracknearest_surface.py:
 calc_sep_dist.py:
         calculate the distance between the location forecasted and the real location and save the data.
 gettrack.py & gettrack-test.py:
-	diffrent from 'gettrack.py':
+	diffrence from 'gettrack.py':
 		 get_indices, url_with_time_position, on_left_click_zoomin(not use), on_left_button_down
-getrack_with_classes.py:
-        trying to rewrite gettrack-test.py with class in it.
 romstest.py:
         use model "ROMS"
 drifter.py:
         draw drifter
+gettrack_with_classes.py:
+        compare drifter real data with both roms and fvcom hourly.
+track_cmp.py:
+        new name of gettrack_with_classes.py.
+	Change: add arg "depth" to "water_roms.waternode()"

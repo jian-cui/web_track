@@ -28,18 +28,19 @@ def value_on_proportion(p1, p2, p0, v1, v2):
 def left_button_down(event):
     x, y = event.xdata, event.ydata
     print x, y
-def rk_4(func, func(0, 0), h):
-    while n is not 0:
-        f[n] = rk_r()
-        f[n+1] = f[n]+h*(k1+2k2+2K3+k4)/6
-        k1 = func(x[n], y[n])
-        
+    
 url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd?h[0:1:81][0:1:129],temp[0:1:307][0:1:35][0:1:81][0:1:129],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129]'
 data = jata.get_nc_data(url, 'lon_rho', 'lat_rho', 'h', 'temp')
 lonsize = np.amin(data['lon_rho'][:])-1, np.amax(data['lon_rho'][:])+1
 latsize = np.amin(data['lat_rho'][:])-1, np.amax(data['lat_rho'][:])+1
 
-
+fig = plt.figure()
+ax = fig.add_subplot(111)
+x = range(1, 309)
+ax.plot(range(1, 309), data['temp'][:, 0, 25, 35])
+# plt.xticks(x, range(5,308,50))
+plt.show()
+'''
 fig = plt.figure()
 ax = plt.subplot(111)
 fig.canvas.mpl_connect('button_press_event', left_button_down)
@@ -62,6 +63,7 @@ cs = plt.contourf(data['lon_rho'], data['lat_rho'], data['h'], range(0,400),
 plt.colorbar()
 # plt.clabel(cs, inline=0, fontsize=10)
 plt.show()
+'''
 '''
 # fig, axes = plt.subplots(nrows=2, ncols=1,sharex=True,sharey=True)
 fig = plt.figure()

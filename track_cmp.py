@@ -92,7 +92,7 @@ class water(object):
                 # p.append(point[index[i])
             # i0,i1,j0,j1 = min(index[1]),max(index[1]),min(index[0]),max(index[0])
             return index
-    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 1)):
+    def nearest_point_index(self, lon, lat, lons, lats, length=(1, 1),num=4):
         '''
         Return the index of the nearest rho point.
         lon, lat: the coordinate of start point, float
@@ -124,7 +124,8 @@ class water(object):
         dx = (lon-lon_covered)*cp
         dy = lat-lat_covered
         dist = dx*dx+dy*dy
-        ''' get several nearest points
+        
+        # get several nearest points
         dist_sort = np.sort(dist)[0:9]
         findex = np.where(dist==dist_sort[0])
         lists = [[]] * len(findex)
@@ -141,6 +142,7 @@ class water(object):
         mindist = np.argmin(dist)
         indx = [i[mindist] for i in index]
         return indx, dist[mindist]
+        '''
     def waternode(self, timeperiod, data):
         pass
 class water_roms(water):
@@ -225,7 +227,7 @@ class water_roms(water):
         lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
-        depth_layers = data['h'][index[0]][index[1]]*data['s_rho']
+        depth_layers = data['h'][index[0][0]][index[1][0]]*data['s_rho']
         layer = np.argmin(abs(depth_layers-depth))
         u = data['u'][:,layer]
         v = data['v'][:,layer]
@@ -236,8 +238,10 @@ class water_roms(water):
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
             # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
-            u_p = u_t[index[0]][index[1]]
-            v_p = v_t[index[0]][index[1]]
+            u_p = u_t[index[0][0]][index[1][0]]
+            v_p = v_t[index[0][0]][index[1][0]]
+            print 'index',index
+            print u_p, v_p
             '''
             for ut, vt in zip(u_p, v_p):
                 if ut:
@@ -491,6 +495,134 @@ class water_drifter(water):
             tdelta.append(abs((time-t).total_seconds()))
         index = tdelta.index(min(tdelta))
         return index
+class water_r(water_roms):
+    def waternode(self, lon, lat, depth, url):
+        '''
+        get the nodes of specific time period
+        lon, lat: start point
+        url: get from get_url(starttime, endtime)
+        depth: 0~35, the 36th is the bottom.
+        '''
+        self.startpoint = lon, lat
+        if type(url) is str:
+            nodes = self.__waternode(lon, lat, depth, url)
+        else: # case where there are two urls, one for start and one for stop time
+            nodes = dict(lon=[self.startpoint[0]],lat=[self.startpoint[1]])
+            for i in url:
+                temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], depth, i)
+                nodes['lon'].extend(temp['lon'][1:])
+                nodes['lat'].extend(temp['lat'][1:])
+        return nodes # dictionary of lat and lon
+    def __waternode(self, lon, lat, depth, url):
+        data = self.get_data(url)
+        nodes = dict(lon=lon, lat=lat)
+        mask = data['mask_rho'][:]
+        lon_rho = data['lon_rho'][:]
+        lat_rho = data['lat_rho'][:]
+        lons = jata.shrink(lon_rho, mask[1:,1:].shape)
+        lats = jata.shrink(lat_rho, mask[1:,1:].shape)
+        index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+        depth_layers = data['h'][index[0][0]][index[0][1]]*data['s_rho']
+        layer = np.argmin(abs(depth_layers-depth))
+        u = data['u'][:,layer]
+        v = data['v'][:,layer]
+        # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
+        # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
+        
+        for i in range(0, self.hours):
+            u_t = jata.shrink(u[i], mask[1:,1:].shape)
+            v_t = jata.shrink(v[i], mask[1:,1:].shape)
+            # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+            # u_p = u_t[index[0]][index[1]]
+            # v_p = v_t[index[0]][index[1]]
+            '''
+            for ut, vt in zip(u_p, v_p):
+                if ut:
+                    break
+            if not ut:
+                # raise Exception('point hit the land')
+                print 'point hit the land'
+                break
+            if not ut:
+                print 'point hit the land'
+                break
+            u_p = u_t[index[0]][index[1]]
+            v_p = v_t[index[0]][index[1]]
+            '''
+            lon, lat, u_p, v_p = RungeKutta4_lonlat(self,lon,lat,lons,lats,u_t,v_t,tau)
+            if not u_p:
+                print 'point hit the land'
+                break
+            '''
+            dx = 60*60*float(u_p)
+            dy = 60*60*float(v_p)
+            lon = lon + dx/(111111*np.cos(lat*np.pi/180))
+            lat = lat + dy/111111
+            '''
+            # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
+            nodes['lon'] = np.append(nodes['lon'],lon)
+            nodes['lat'] = np.append(nodes['lat'],lat)
+        return nodes
+def polygonal_barycentric_coordinates(xp,yp,xv,yv):
+    N=len(xv)   
+    j=np.arange(N)
+    ja=(j+1)%N
+    jb=(j-1)%N
+    Ajab=np.cross(np.array([xv[ja]-xv[j],yv[ja]-yv[j]]).T,
+                  np.array([xv[jb]-xv[j],yv[jb]-yv[j]]).T)
+    Aj=np.cross(np.array([xv[j]-xp,yv[j]-yp]).T,
+                np.array([xv[ja]-xp,yv[ja]-yp]).T)
+    Aj=abs(Aj)
+    Ajab=abs(Ajab)
+    Aj=Aj/max(abs(Aj))
+    Ajab=Ajab/max(abs(Ajab))    
+    w=xv*0.
+    j2=np.arange(N-2)
+    for j in range(N):
+        w[j]=Ajab[j]*Aj[(j2+j+1)%N].prod()
+        # print Ajab[j],Aj[(j2+j+1)%N]
+    w=w/w.sum()
+    return w
+def VelInterp_lonlat(obj,lonp,latp,lons,lats,u,v):
+    '''
+# find the nearest vertex    
+    kv,distance=nearlonlat(Grid['lon'],Grid['lat'],lonp,latp)
+ #   print kv,lonp,latp
+# list of triangles surrounding the vertex kv    
+    kfv=Grid['kfv'][0:Grid['nfv'][kv],kv]
+# coordinates of the (dual mesh) polygon vertices: the centers of triangle faces
+    lonv=Grid['lonc'][kfv];latv=Grid['latc'][kfv]
+    w=polygonal_barycentric_coordinates(lonp,latp,lonv,latv)
+# baricentric coordinates are invariant wrt coordinate transformation (xy - lonlat), check!    
+# interpolation within polygon, w - normalized weights: w.sum()=1.    
+# use precalculated Lame coefficients for the spherical coordinates
+# coslatc[kfv] at the polygon vertices
+# essentially interpolate u/cos(latitude)
+# this is needed for RungeKutta_lonlat: dlon = u/cos(lat)*tau, dlat = vi*tau
+    cv=Grid['coslatc'][kfv]
+ #   print cv    
+    urci=(u[kfv]/cv*w).sum()
+    vi=(v[kfv]*w).sum()
+    return urci,vi
+    '''
+    index, distance = obj.nearest_point_index(lonp,latp,lons,lats)
+    lonv,latv = lons[index[0],index[1]], lats[index[0],index[1]]
+    w = polygonal_barycentric_coordinates(lonp,latp,lonv,latv)
+    uf = (u[index[0],index[1]]/np.cos(lats[index[0],index[1]]*np.pi/180)*w).sum()
+    vf = (v[index[0],index[1]]*w).sum()
+    return uf, vf
+
+def RungeKutta4_lonlat(obj,lon,lat,lons,lats,u,v,tau):       
+    lon1=lon*1.;          lat1=lat*1.;        urc1,v1=VelInterp_lonlat(obj,lon1,lat1,lons,lats,u,v);  
+    lon2=lon+0.5*tau*urc1;lat2=lat+0.5*tau*v1;urc2,v2=VelInterp_lonlat(obj,lon2,lat2,lons,lats,u,v);
+    lon3=lon+0.5*tau*urc2;lat3=lat+0.5*tau*v2;urc3,v3=VelInterp_lonlat(obj,lon3,lat3,lons,lats,u,v);
+    lon4=lon+    tau*urc3;lat4=lat+    tau*v3;urc4,v4=VelInterp_lonlat(obj,lon4,lat4,lons,lats,u,v);
+    lon=lon+tau/6.*(urc1+2.*urc2+2.*urc3+urc4);
+    lat=lat+tau/6.*(v1+2.*v2+2.*v3+v4); 
+    uinterplation=  (urc1+2.*urc2+2.*urc3+urc4)/6    
+    vinterplation= (v1+2.*v2+2.*v3+v4)/6
+   # print urc1,v1,urc2,v2,urc3,v3,urc4,v4
+    return lon,lat,uinterplation,vinterplation
 
 def min_data(*args):
     '''
@@ -575,12 +707,11 @@ elif modelname is 'FVCOM':
     fig.ax.plot(nodes['lon'], nodes['lat'], 'ro-')
     plt.show()
 '''
-
 #######################################110410712,117400701
 drifter_id = 106410712
 days = 3
 depth = -1
-starttime = '2010-07-25 00:00'
+starttime = '2010-07-20 00:00'
 # (This line is not useful)starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
 # starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
 # starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
@@ -599,7 +730,7 @@ else:
 lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
-
+'''
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
@@ -607,19 +738,38 @@ nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
-print 'nodes_roms', nodes_roms
-print 'nodes_fvcom', nodes_fvcom
+
+tau = 60*60/111111.
+water_r = water_r()
+url_r = water_r.get_url(starttime, endtime)
+nodes_r = water_r.waternode(lon, lat, depth, url_r)
+print 'nodes_r', nodes_r
 
 lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])-0.5,
            max_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])+0.5]
 latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])-0.5,
-           max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+0.5]
+max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+0.5]
+'''
+l = len(nodes_drifter['time'])
 
+lonsize = [min_data(nodes_drifter['lon'])-0.5,max_data(nodes_drifter['lon'])+0.5]
+latsize = [min_data(nodes_drifter['lat'])-0.5,max_data(nodes_drifter['lat'])+0.5]
 fig = figure_with_basemap(lonsize, latsize)
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'],'bo-',label='roms')
-fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+# fig.ax.plot(nodes_r['lon'],nodes_r['lat'],'bo-',label='roms_rk4')
+# fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'yo-', label='roms')
+# fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+water_roms = water_roms()
+for i in range(l):
+    starttime = nodes_drifter['time'][i]
+    endtime = starttime+timedelta(hours=3)
+    lon, lat = nodes_drifter['lon'][i], nodes_drifter['lat'][i]
+    # water_roms = water_roms()
+    url_roms = water_roms.get_url(starttime, endtime)
+    nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
+    fig.ax.plot(nodes_roms['lon'], nodes_roms['lat'], 'bo-')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend()
 plt.show()
+

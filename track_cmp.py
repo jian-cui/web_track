@@ -41,7 +41,7 @@ class figure_with_basemap(mpl.figure.Figure):
         self.dmap.fillcontinents(color='grey')
         self.dmap.drawmapboundary()
         # self.cid = self.canvas.mpl_connect('button_press_event',
-                                           # self.on_left_button_down)
+        #                                    self.on_left_button_down)
     def on_left_button_down(self, event):
         # not necessary but here to demonstrate the action of clicking on the map
         if event.button == 1:
@@ -139,6 +139,7 @@ class water(object):
         indx = [i[lists] for i in index]
         return indx, dist_sort[0:num]
         '''
+        # for only one point returned
         mindist = np.argmin(dist)
         indx = [i[mindist] for i in index]
         return indx, dist[mindist]
@@ -187,7 +188,6 @@ class water_roms(water):
         time_r = datetime(year=2006,month=1,day=9,hour=1,minute=0)
         index1 = (starttime - time_r).total_seconds()/60/60
         index2 = index1 + self.hours
-        print 'time', index1, index2
         url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2006_da/his?h[0:1:81][0:1:129],s_rho[0:1:35],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
         url = url.format(index1, index2)
         return url
@@ -240,8 +240,6 @@ class water_roms(water):
             # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
             u_p = u_t[index[0][0]][index[1][0]]
             v_p = v_t[index[0][0]][index[1][0]]
-            print 'index',index
-            print u_p, v_p
             '''
             for ut, vt in zip(u_p, v_p):
                 if ut:
@@ -278,12 +276,10 @@ class water_fvcom(water):
         self.hours = int((endtime-starttime).total_seconds()/60/60)
         if self.modelname is "30yr":
             url = []
-            # endtime = starttime + timedelta(days=days)
             time1 = datetime(year=2011,month=1,day=1)      #all these datetime are made based on the model.
             time2 = datetime(year=2011,month=11,day=11)      #The model use different version data of different period.
             time3 = datetime(year=2013,month=05,day=9)
             time4 = datetime(year=2013,month=12,day=1)
-            # endtime = starttime + timedelta(days=days)
             if endtime < time1:
                 yearnum = starttime.year-1981
                 standardtime = datetime.strptime(str(starttime.year)+'-01-01 00:00:00',
@@ -353,7 +349,6 @@ class water_fvcom(water):
              
         else:
             url.extend(self.get_url(starttime,(time1-timedelta(minutes=1))))
-            # url.extend(self.get_url(datetime(year=2011,month=11,day=10),endtime))
             url.extend(self.get_url(time1,endtime))
         return url
     def __url(self, year, month, start_daytime, end_daytime):
@@ -408,7 +403,6 @@ class water_fvcom(water):
         else:
             nodes = dict(lon=[lon],lat=[lat])
             for i in url:
-                print i
                 temp = self.__waternode(nodes['lon'][-1], nodes['lat'][-1], depth, i)
                 nodes['lat'].extend(temp['lat'])
                 nodes['lon'].extend(temp['lon'])
@@ -426,8 +420,8 @@ class water_fvcom(water):
         if lon>90:
             lon, lat = dm2dd(lon, lat)
         nodes = dict(lon=[], lat=[])
-        kf,distanceF = self.nearest_point_index(lon,lat,lonc,latc)
-        kv,distanceV = self.nearest_point_index(lon,lat,lonv,latv)
+        kf,distanceF = self.nearest_point_index(lon,lat,lonc,latc,num=1)
+        kv,distanceV = self.nearest_point_index(lon,lat,lonv,latv,num=1)
         if h[kv] < 0:
             sys.exit('Sorry, your position is on land, please try another point')
         depth_total = siglay[:,kv]*h[kv]
@@ -437,16 +431,16 @@ class water_fvcom(water):
         for i in range(self.hours):
             # u_t = np.array(data['u'])[i,layer,kf]
             # v_t = np.array(data['v'])[i,layer,kf]
-            u_t = data['u'][i, layer, kf[0]]
-            v_t = data['v'][i, layer, kf[0]]
+            u_t = data['u'][i, layer, kf[0][0]]
+            v_t = data['v'][i, layer, kf[0][0]]
             dx = 60*60*u_t
             dy = 60*60*v_t
             lon = lon + (dx/(111111*np.cos(lat*np.pi/180)))
             lat = lat + dy/111111
             nodes['lon'].append(lon)
             nodes['lat'].append(lat)
-            kf, distanceF = self.nearest_point_index(lon, lat, lonc, latc)
-            kv, distanceV = self.nearest_point_index(lon, lat, lonv, latv)
+            kf, distanceF = self.nearest_point_index(lon, lat, lonc, latc,num=1)
+            kv, distanceV = self.nearest_point_index(lon, lat, lonv, latv,num=1)
             # depth_total = siglay[:][kv]*h[kv]
             if distanceV>=.3:
                 if i==start:
@@ -495,7 +489,10 @@ class water_drifter(water):
             tdelta.append(abs((time-t).total_seconds()))
         index = tdelta.index(min(tdelta))
         return index
-class water_r(water_roms):
+class water_roms_rk4(water_roms):
+    '''
+    model roms using Runge Kutta
+    '''
     def waternode(self, lon, lat, depth, url):
         '''
         get the nodes of specific time period
@@ -528,7 +525,6 @@ class water_r(water_roms):
         v = data['v'][:,layer]
         # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
-        
         for i in range(0, self.hours):
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
@@ -549,7 +545,7 @@ class water_r(water_roms):
             u_p = u_t[index[0]][index[1]]
             v_p = v_t[index[0]][index[1]]
             '''
-            lon, lat, u_p, v_p = RungeKutta4_lonlat(self,lon,lat,lons,lats,u_t,v_t,tau)
+            lon, lat, u_p, v_p = self.RungeKutta4_lonlat(lon,lat,lons,lats,u_t,v_t)
             if not u_p:
                 print 'point hit the land'
                 break
@@ -563,66 +559,66 @@ class water_r(water_roms):
             nodes['lon'] = np.append(nodes['lon'],lon)
             nodes['lat'] = np.append(nodes['lat'],lat)
         return nodes
-def polygonal_barycentric_coordinates(xp,yp,xv,yv):
-    N=len(xv)   
-    j=np.arange(N)
-    ja=(j+1)%N
-    jb=(j-1)%N
-    Ajab=np.cross(np.array([xv[ja]-xv[j],yv[ja]-yv[j]]).T,
-                  np.array([xv[jb]-xv[j],yv[jb]-yv[j]]).T)
-    Aj=np.cross(np.array([xv[j]-xp,yv[j]-yp]).T,
-                np.array([xv[ja]-xp,yv[ja]-yp]).T)
-    Aj=abs(Aj)
-    Ajab=abs(Ajab)
-    Aj=Aj/max(abs(Aj))
-    Ajab=Ajab/max(abs(Ajab))    
-    w=xv*0.
-    j2=np.arange(N-2)
-    for j in range(N):
-        w[j]=Ajab[j]*Aj[(j2+j+1)%N].prod()
-        # print Ajab[j],Aj[(j2+j+1)%N]
-    w=w/w.sum()
-    return w
-def VelInterp_lonlat(obj,lonp,latp,lons,lats,u,v):
-    '''
-# find the nearest vertex    
-    kv,distance=nearlonlat(Grid['lon'],Grid['lat'],lonp,latp)
- #   print kv,lonp,latp
-# list of triangles surrounding the vertex kv    
-    kfv=Grid['kfv'][0:Grid['nfv'][kv],kv]
-# coordinates of the (dual mesh) polygon vertices: the centers of triangle faces
-    lonv=Grid['lonc'][kfv];latv=Grid['latc'][kfv]
-    w=polygonal_barycentric_coordinates(lonp,latp,lonv,latv)
-# baricentric coordinates are invariant wrt coordinate transformation (xy - lonlat), check!    
-# interpolation within polygon, w - normalized weights: w.sum()=1.    
-# use precalculated Lame coefficients for the spherical coordinates
-# coslatc[kfv] at the polygon vertices
-# essentially interpolate u/cos(latitude)
-# this is needed for RungeKutta_lonlat: dlon = u/cos(lat)*tau, dlat = vi*tau
-    cv=Grid['coslatc'][kfv]
- #   print cv    
-    urci=(u[kfv]/cv*w).sum()
-    vi=(v[kfv]*w).sum()
-    return urci,vi
-    '''
-    index, distance = obj.nearest_point_index(lonp,latp,lons,lats)
-    lonv,latv = lons[index[0],index[1]], lats[index[0],index[1]]
-    w = polygonal_barycentric_coordinates(lonp,latp,lonv,latv)
-    uf = (u[index[0],index[1]]/np.cos(lats[index[0],index[1]]*np.pi/180)*w).sum()
-    vf = (v[index[0],index[1]]*w).sum()
-    return uf, vf
-
-def RungeKutta4_lonlat(obj,lon,lat,lons,lats,u,v,tau):       
-    lon1=lon*1.;          lat1=lat*1.;        urc1,v1=VelInterp_lonlat(obj,lon1,lat1,lons,lats,u,v);  
-    lon2=lon+0.5*tau*urc1;lat2=lat+0.5*tau*v1;urc2,v2=VelInterp_lonlat(obj,lon2,lat2,lons,lats,u,v);
-    lon3=lon+0.5*tau*urc2;lat3=lat+0.5*tau*v2;urc3,v3=VelInterp_lonlat(obj,lon3,lat3,lons,lats,u,v);
-    lon4=lon+    tau*urc3;lat4=lat+    tau*v3;urc4,v4=VelInterp_lonlat(obj,lon4,lat4,lons,lats,u,v);
-    lon=lon+tau/6.*(urc1+2.*urc2+2.*urc3+urc4);
-    lat=lat+tau/6.*(v1+2.*v2+2.*v3+v4); 
-    uinterplation=  (urc1+2.*urc2+2.*urc3+urc4)/6    
-    vinterplation= (v1+2.*v2+2.*v3+v4)/6
-   # print urc1,v1,urc2,v2,urc3,v3,urc4,v4
-    return lon,lat,uinterplation,vinterplation
+    def polygonal_barycentric_coordinates(self,xp,yp,xv,yv):
+        N=len(xv)   
+        j=np.arange(N)
+        ja=(j+1)%N
+        jb=(j-1)%N
+        Ajab=np.cross(np.array([xv[ja]-xv[j],yv[ja]-yv[j]]).T,
+                      np.array([xv[jb]-xv[j],yv[jb]-yv[j]]).T)
+        Aj=np.cross(np.array([xv[j]-xp,yv[j]-yp]).T,
+                    np.array([xv[ja]-xp,yv[ja]-yp]).T)
+        Aj=abs(Aj)
+        Ajab=abs(Ajab)
+        Aj=Aj/max(abs(Aj))
+        Ajab=Ajab/max(abs(Ajab))    
+        w=xv*0.
+        j2=np.arange(N-2)
+        for j in range(N):
+            w[j]=Ajab[j]*Aj[(j2+j+1)%N].prod()
+            # print Ajab[j],Aj[(j2+j+1)%N]
+        w=w/w.sum()
+        return w
+    def VelInterp_lonlat(self,lonp,latp,lons,lats,u,v):
+        '''
+    # find the nearest vertex    
+        kv,distance=nearlonlat(Grid['lon'],Grid['lat'],lonp,latp)
+     #   print kv,lonp,latp
+    # list of triangles surrounding the vertex kv    
+        kfv=Grid['kfv'][0:Grid['nfv'][kv],kv]
+    # coordinates of the (dual mesh) polygon vertices: the centers of triangle faces
+        lonv=Grid['lonc'][kfv];latv=Grid['latc'][kfv]
+        w=polygonal_barycentric_coordinates(lonp,latp,lonv,latv)
+    # baricentric coordinates are invariant wrt coordinate transformation (xy - lonlat), check!    
+    # interpolation within polygon, w - normalized weights: w.sum()=1.    
+    # use precalculated Lame coefficients for the spherical coordinates
+    # coslatc[kfv] at the polygon vertices
+    # essentially interpolate u/cos(latitude)
+    # this is needed for RungeKutta_lonlat: dlon = u/cos(lat)*tau, dlat = vi*tau
+        cv=Grid['coslatc'][kfv]
+     #   print cv    
+        urci=(u[kfv]/cv*w).sum()
+        vi=(v[kfv]*w).sum()
+        return urci,vi
+        '''
+        index, distance = self.nearest_point_index(lonp,latp,lons,lats)
+        lonv,latv = lons[index[0],index[1]], lats[index[0],index[1]]
+        w = self.polygonal_barycentric_coordinates(lonp,latp,lonv,latv)
+        uf = (u[index[0],index[1]]/np.cos(lats[index[0],index[1]]*np.pi/180)*w).sum()
+        vf = (v[index[0],index[1]]*w).sum()
+        return uf, vf
+    def RungeKutta4_lonlat(self,lon,lat,lons,lats,u,v):
+        tau = 60*60/111111.
+        lon1=lon*1.;          lat1=lat*1.;        urc1,v1=self.VelInterp_lonlat(lon1,lat1,lons,lats,u,v);  
+        lon2=lon+0.5*tau*urc1;lat2=lat+0.5*tau*v1;urc2,v2=self.VelInterp_lonlat(lon2,lat2,lons,lats,u,v);
+        lon3=lon+0.5*tau*urc2;lat3=lat+0.5*tau*v2;urc3,v3=self.VelInterp_lonlat(lon3,lat3,lons,lats,u,v);
+        lon4=lon+    tau*urc3;lat4=lat+    tau*v3;urc4,v4=self.VelInterp_lonlat(lon4,lat4,lons,lats,u,v);
+        lon=lon+tau/6.*(urc1+2.*urc2+2.*urc3+urc4);
+        lat=lat+tau/6.*(v1+2.*v2+2.*v3+v4); 
+        uinterplation=  (urc1+2.*urc2+2.*urc3+urc4)/6    
+        vinterplation= (v1+2.*v2+2.*v3+v4)/6
+       # print urc1,v1,urc2,v2,urc3,v3,urc4,v4
+        return lon,lat,uinterplation,vinterplation
 
 def min_data(*args):
     '''
@@ -707,11 +703,11 @@ elif modelname is 'FVCOM':
     fig.ax.plot(nodes['lon'], nodes['lat'], 'ro-')
     plt.show()
 '''
-#######################################110410712,117400701
-drifter_id = 106410712
+########################106410712,110410712,118410701###########################
+drifter_id = 118410701
 days = 3
 depth = -1
-starttime = '2010-07-20 00:00'
+starttime = '2011-08-02 00:00'
 # (This line is not useful)starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
 # starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
 # starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
@@ -739,25 +735,22 @@ water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
 
-tau = 60*60/111111.
-water_r = water_r()
-url_r = water_r.get_url(starttime, endtime)
-nodes_r = water_r.waternode(lon, lat, depth, url_r)
-print 'nodes_r', nodes_r
+water_roms_rk4 = water_roms_rk4()
+url_roms_rk4 = water_roms_rk4.get_url(starttime, endtime)
+nodes_roms_rk4 = water_roms_rk4.waternode(lon, lat, depth, url_roms_rk4)
 
 lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])-0.5,
            max_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])+0.5]
 latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])-0.5,
            max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+0.5]
 
-# l = len(nodes_drifter['time'])
-
 fig = figure_with_basemap(lonsize, latsize)
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-fig.ax.plot(nodes_r['lon'],nodes_r['lat'],'bo-',label='roms_rk4')
+fig.ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
 fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
 fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 '''
+l = len(nodes_drifter['time'])
 water_roms = water_roms()
 for i in range(l):
     starttime = nodes_drifter['time'][i]

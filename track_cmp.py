@@ -730,7 +730,7 @@ else:
 lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
-'''
+
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
@@ -748,17 +748,16 @@ print 'nodes_r', nodes_r
 lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])-0.5,
            max_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])+0.5]
 latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])-0.5,
-max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+0.5]
-'''
-l = len(nodes_drifter['time'])
+           max_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])+0.5]
 
-lonsize = [min_data(nodes_drifter['lon'])-0.5,max_data(nodes_drifter['lon'])+0.5]
-latsize = [min_data(nodes_drifter['lat'])-0.5,max_data(nodes_drifter['lat'])+0.5]
+# l = len(nodes_drifter['time'])
+
 fig = figure_with_basemap(lonsize, latsize)
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-# fig.ax.plot(nodes_r['lon'],nodes_r['lat'],'bo-',label='roms_rk4')
-# fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'yo-', label='roms')
-# fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+fig.ax.plot(nodes_r['lon'],nodes_r['lat'],'bo-',label='roms_rk4')
+fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
+fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+'''
 water_roms = water_roms()
 for i in range(l):
     starttime = nodes_drifter['time'][i]
@@ -768,6 +767,7 @@ for i in range(l):
     url_roms = water_roms.get_url(starttime, endtime)
     nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
     fig.ax.plot(nodes_roms['lon'], nodes_roms['lat'], 'bo-')
+'''
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend()

@@ -51,7 +51,7 @@ def getdrift(id):
     try:
         lat = list(dataset.drift_data[dataset.drift_data.ID == id].LAT_DD)
     except:
-        print 'Sorry, ' + id + ' is not available'
+        print 'Sorry, ' + str(id) + ' is not available'
         sys.exit(0)
         
     lon = list(dataset.drift_data[dataset.drift_data.ID == id].LON_DD)

@@ -233,7 +233,6 @@ class water_roms(water):
         v = data['v'][:,layer]
         # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
-        
         for i in range(0, self.hours):
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
@@ -463,9 +462,9 @@ class water_drifter(water):
         # nodes = jata.data_extracted(self.dataloc, self.drifter_id, self.starttime)
         nodes = {}
         temp = getdrift(self.drifter_id)
-        nodes['lon'] = temp[1]
-        nodes['lat'] = temp[0]
-        nodes['time'] = temp[2]
+        nodes['lon'] = np.array(temp[1])
+        nodes['lat'] = np.array(temp[0])
+        nodes['time'] = np.array(temp[2])
         if bool(starttime):
             if bool(days):
                 endtime = starttime + timedelta(days=days)
@@ -636,6 +635,16 @@ def max_data(*args):
     for i in range(len(args)):
         data.append(max(args[i]))
     return max(data)
+def angle_conversion(a):
+    a = np.array(a)
+    return a/180*np.pi
+def dist(lon1, lat1, lon2, lat2):
+    R = 6371.004
+    lon1, lat1 = angle_conversion(lon1), angle_conversion(lat1)
+    lon2, lat2 = angle_conversion(lon2), angle_conversion(lat2)
+    l = R*np.arccos(np.cos(lat1)*np.cos(lat2)*np.cos(lon1-lon2)+
+                    np.sin(lat1)*np.sin(lat2))
+    return l
 '''
 modelname = 'ROMS'
 if modelname is 'drifter':
@@ -738,7 +747,7 @@ nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
 water_roms_rk4 = water_roms_rk4()
 url_roms_rk4 = water_roms_rk4.get_url(starttime, endtime)
 nodes_roms_rk4 = water_roms_rk4.waternode(lon, lat, depth, url_roms_rk4)
-
+'''
 lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])-0.5,
            max_data(nodes_drifter['lon'],nodes_fvcom['lon'],nodes_roms['lon'])+0.5]
 latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat'],nodes_roms['lat'])-0.5,
@@ -749,6 +758,7 @@ fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 fig.ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
 fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
 fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+'''
 '''
 l = len(nodes_drifter['time'])
 water_roms = water_roms()
@@ -761,8 +771,27 @@ for i in range(l):
     nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
     fig.ax.plot(nodes_roms['lon'], nodes_roms['lat'], 'bo-')
 '''
+'''
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend()
+# plt.show()
+'''
+r = min(len(nodes_drifter['lon']), len(nodes_roms['lon']))
+dist_roms = dist(nodes_roms['lon'][0:r],nodes_roms['lat'][0:r],
+                 nodes_drifter['lon'][0:r],nodes_drifter['lat'][0:r])
+r_rk4 = min(len(nodes_drifter['lon']), len(nodes_roms_rk4['lon']))
+dist_roms_rk4 = dist(nodes_roms_rk4['lon'][:r_rk4],nodes_roms_rk4['lat'][:r_rk4],
+                     nodes_drifter['lon'][:r_rk4],nodes_drifter['lat'][:r_rk4])
+f = min(len(nodes_drifter['lon']), len(nodes_fvcom['lon']))
+dist_fvcom = dist(nodes_fvcom['lon'][:f],nodes_fvcom['lat'][:f],
+                  nodes_drifter['lon'][:f],nodes_drifter['lat'][:f])
+print '1'
+fig2 = mpl.figure.Figure()
+ax2 = fig2.add_subplot(111)
+plt.plot(dist_roms, 'r-', label='roms')
+plt.plot(dist_roms_rk4, 'b-', label='roms_rk4')
+plt.plot(dist_fvcom, 'y-', label='fvcom')
+plt.legend()
+plt.title('Distance between real data and model')
 plt.show()
-

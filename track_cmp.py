@@ -1,12 +1,10 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
-import numpy as np
-import jmath, jata
-from datetime import datetime
-from matplotlib import pyplot as plt
 import matplotlib as mpl
+import numpy as np
+from mpl_toolkits.basemap import Basemap
+import jmath, jata
+from datetime import datetime, timedelta
 from matplotlib import path
-from datetime import timedelta
 from conversions import dm2dd
 import sys
 from getdata import getdrift
@@ -198,6 +196,9 @@ class water_roms(water):
         url = url.format(index1, index2)
         return url
     def __closest_num(self, num, numlist, i=0):
+        '''
+        Return index of the closest number in the list
+        '''
         index1, index2 = 0, len(numlist)
         indx = int(index2/2)
         if not numlist[0] < num < numlist[-1]:

@@ -190,7 +190,6 @@ class water_roms(water):
         data_oceantime = netCDF4.Dataset(url_oceantime)
         t1 = (starttime - datetime(2006,01,01)).total_seconds()
         t2 = (endtime - datetime(2006,01,01)).total_seconds()
-        print data_oceantime.variables['ocean_time'][:]
         index1 = self.__closest_num(t1,data_oceantime.variables['ocean_time'][:])
         index2 = self.__closest_num(t2,data_oceantime.variables['ocean_time'][:])
         # index1 = (starttime - time_r).total_seconds()/60/60
@@ -198,24 +197,25 @@ class water_roms(water):
         url = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2006_da/his?h[0:1:81][0:1:129],s_rho[0:1:35],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
         url = url.format(index1, index2)
         return url
-    def __closest_num(num, numlist, i=0):
-        print numlist
-        print type(numlist)
+    def __closest_num(self, num, numlist, i=0):
         index1, index2 = 0, len(numlist)
-        l1, l2 = num-numlist[index1], numlist[index2]-num
-        if l1<0 or l2<0:
+        indx = int(index2/2)
+        if not numlist[0] < num < numlist[-1]:
             raise Exception('{0} is not in {1}'.format(str(num), str(numlist)))
         if index2 == 2:
+            l1, l2 = num-numlist[0], numlist[-1]-num
             if l1 < l2:
                 i = i
             else:
                 i = i+1
-        elif l1 >= l2:
-            i = __closest_num(num, numlist[int(index2/2):numlist],
-                              i=i+int(index2/2))
-        elif l1 < l2:
-            i = __closest_num(num, numlist[0:int(index2/2)], i=i)
-        return i        
+        elif num == numlist[indx]:
+            i = i + indx
+        elif num > numlist[indx]:
+            i = self.__closest_num(num, numlist[indx:],
+                              i=i+indx)
+        elif num < numlist[indx]:
+            i = self.__closest_num(num, numlist[0:indx+1], i=i)
+        return i
     def get_data(self, url):
         '''
         return the data needed.
@@ -549,7 +549,7 @@ class water_roms_rk4(water_roms):
         v = data['v'][:,layer]
         # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
-        for i in range(0, self.hours):
+        for i in range(0, len(data['u'][:])):
             u_t = jata.shrink(u[i], mask[1:,1:].shape)
             v_t = jata.shrink(v[i], mask[1:,1:].shape)
             # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
@@ -760,11 +760,11 @@ else:
 lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
-'''
+
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
-'''
+
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
@@ -782,7 +782,7 @@ fig = figure_with_basemap(lonsize, latsize)
 fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 fig.ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
 fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
-# fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 '''
 l = len(nodes_drifter['time'])
 water_roms = water_roms()
@@ -797,7 +797,7 @@ for i in range(l):
 '''
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
-plt.legend()
+plt.legend(loc='lower right')
 # plt.show()
 
 r = min(len(nodes_drifter['lon']), len(nodes_roms['lon']))
@@ -806,14 +806,14 @@ dist_roms = dist(nodes_roms['lon'][0:r],nodes_roms['lat'][0:r],
 r_rk4 = min(len(nodes_drifter['lon']), len(nodes_roms_rk4['lon']))
 dist_roms_rk4 = dist(nodes_roms_rk4['lon'][:r_rk4],nodes_roms_rk4['lat'][:r_rk4],
                      nodes_drifter['lon'][:r_rk4],nodes_drifter['lat'][:r_rk4])
-# f = min(len(nodes_drifter['lon']), len(nodes_fvcom['lon']))
-# dist_fvcom = dist(nodes_fvcom['lon'][:f],nodes_fvcom['lat'][:f],
-#                   nodes_drifter['lon'][:f],nodes_drifter['lat'][:f])
+f = min(len(nodes_drifter['lon']), len(nodes_fvcom['lon']))
+dist_fvcom = dist(nodes_fvcom['lon'][:f],nodes_fvcom['lat'][:f],
+                  nodes_drifter['lon'][:f],nodes_drifter['lat'][:f])
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
 plt.plot(dist_roms, 'r-', label='roms')
 plt.plot(dist_roms_rk4, 'b-', label='roms_rk4')
-# plt.plot(dist_fvcom, 'y-', label='fvcom')
-plt.legend()
-plt.title('Distance between real data and model')
+plt.plot(dist_fvcom, 'y-', label='fvcom')
+plt.legend(loc='lower right')
+plt.title('Distance of drifter data and model data')
 plt.show()

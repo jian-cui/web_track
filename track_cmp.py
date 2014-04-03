@@ -10,11 +10,10 @@ import sys
 from getdata import getdrift
 import calendar
 import netCDF4
+'''
 class figure_with_basemap(mpl.figure.Figure):
     def __init__(self,lonsize,latsize,axes_num=1,interval_lon=0.5,interval_lat=0.5):
-        '''
-        draw the Basemap, set the number of panels in the figure
-        '''
+        # draw the Basemap, set the number of panels in the figure
         super(figure_with_basemap, self).__init__()
         self.lonsize, self.latsize = lonsize, latsize
         line_num = jmath.smallest_multpr(2,axes_num)
@@ -48,6 +47,7 @@ class figure_with_basemap(mpl.figure.Figure):
     def getSize(self):
         return self.lonsize, self.latsize
     size = property(getSize)
+'''
 class water(object):
     def __init__(self, startpoint):
         '''
@@ -671,6 +671,23 @@ def dist(lon1, lat1, lon2, lat2):
     l = R*np.arccos(np.cos(lat1)*np.cos(lat2)*np.cos(lon1-lon2)+
                     np.sin(lat1)*np.sin(lat2))
     return l
+def draw_basemap(fig, ax, lonsize, latsize, interval_lon=0.5, interval_lat=0.5):
+    ax = fig.sca(ax)
+    dmap = Basemap(projection='cyl',
+                   llcrnrlat=min(latsize)-0.01,
+                   urcrnrlat=max(latsize)+0.01,
+                   llcrnrlon=min(lonsize)-0.01,
+                   urcrnrlon=max(lonsize)+0.01,
+                   resolution='h',ax=ax)
+    dmap.drawparallels(np.arange(int(min(latsize)),
+                                 int(max(latsize))+1,interval_lat),
+                       labels=[1,0,0,0])
+    dmap.drawmeridians(np.arange(int(min(lonsize))-1,
+                                 int(max(lonsize))+1,interval_lon),
+                       labels=[0,0,0,1])
+    dmap.drawcoastlines()
+    dmap.fillcontinents(color='grey')
+    dmap.drawmapboundary()
 '''
 modelname = 'ROMS'
 if modelname is 'drifter':
@@ -738,16 +755,13 @@ elif modelname is 'FVCOM':
     fig.ax.plot(nodes['lon'], nodes['lat'], 'ro-')
     plt.show()
 '''
-########################106410712,110410712,118410701###########################
-drifter_id = 118410701
+########################main code###########################
+drifter_id = 110410712
 days = 3
 depth = -1
-starttime = '2011-08-02 00:00'
-# (This line is not useful)starttime = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
-# starttime = datetime(year=2013,month=9,day=22,hour=15,minute=47)
-# starttime = '2011-10-10 15:47'           #if used, make sure it's in drifter period
-starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
+starttime = '2011-10-15 00:00'
 
+starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
 drifter_id = jata.input_with_default('drifter_id', drifter_id)
 drifter = water_drifter(drifter_id)
 if starttime:
@@ -769,21 +783,22 @@ nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
-
+'''
 water_roms_rk4 = water_roms_rk4()
 url_roms_rk4 = water_roms_rk4.get_url(starttime, endtime)
 nodes_roms_rk4 = water_roms_rk4.waternode(lon, lat, depth, url_roms_rk4)
-
+'''
 lonsize = [min_data(nodes_drifter['lon'],nodes_roms['lon'])-0.5,
            max_data(nodes_drifter['lon'],nodes_roms['lon'])+0.5]
 latsize = [min_data(nodes_drifter['lat'],nodes_roms['lat'])-0.5,
            max_data(nodes_drifter['lat'],nodes_roms['lat'])+0.5]
-
-fig = figure_with_basemap(lonsize, latsize)
-fig.ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-fig.ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
-fig.ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
-fig.ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+fig = plt.figure()
+ax = fig.add_subplot(111)
+draw_basemap(fig, ax, lonsize, latsize)
+ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
+# fig.ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
+ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
+ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 '''
 l = len(nodes_drifter['time'])
 water_roms = water_roms()
@@ -799,21 +814,25 @@ for i in range(l):
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend(loc='lower right')
+figname = 'track_cmp-{0}-{1}-{2}.png'.format(drifter_id, starttime, days)
+plt.savefig(figname, dpi=200)
 # plt.show()
 
 r = min(len(nodes_drifter['lon']), len(nodes_roms['lon']))
 dist_roms = dist(nodes_roms['lon'][0:r],nodes_roms['lat'][0:r],
                  nodes_drifter['lon'][0:r],nodes_drifter['lat'][0:r])
+'''
 r_rk4 = min(len(nodes_drifter['lon']), len(nodes_roms_rk4['lon']))
 dist_roms_rk4 = dist(nodes_roms_rk4['lon'][:r_rk4],nodes_roms_rk4['lat'][:r_rk4],
                      nodes_drifter['lon'][:r_rk4],nodes_drifter['lat'][:r_rk4])
+'''
 f = min(len(nodes_drifter['lon']), len(nodes_fvcom['lon']))
 dist_fvcom = dist(nodes_fvcom['lon'][:f],nodes_fvcom['lat'][:f],
                   nodes_drifter['lon'][:f],nodes_drifter['lat'][:f])
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
 plt.plot(dist_roms, 'r-', label='roms')
-plt.plot(dist_roms_rk4, 'b-', label='roms_rk4')
+# plt.plot(dist_roms_rk4, 'b-', label='roms_rk4')
 plt.plot(dist_fvcom, 'y-', label='fvcom')
 plt.legend(loc='lower right')
 plt.title('Distance of drifter data and model data')

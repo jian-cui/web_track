@@ -178,14 +178,18 @@ def value_on_proportion(p1, p2, p0, v1, v2):
     return v3
 def left_button_down(event):
     lon, lat = event.xdata, event.ydata
-    print "You click: ", lon, lat
-    tempobj = temp()
-    url = tempobj.get_url(starttime, endtime)
-    dtemp, dtime = tempobj.templine(lon, lat, depth, url)
-    fig2 = plt.figure()
-    ax2 = fig2.add_subplot(111)
-    ax2.plot(dtime, dtemp)
-    plt.show()
+    if lon is None:
+        print 'Sorry, please click another point'
+    else:
+        print "You click: ", lon, lat
+        tempobj = temp()
+        url = tempobj.get_url(starttime, endtime)
+        dtemp, dtime = tempobj.templine(lon, lat, depth, url)
+        fig2 = plt.figure()
+        ax2 = fig2.add_subplot(111)
+        ax2.plot(dtime, dtemp)
+        plt.title('lon:{0},lat:{1},From:{2}'.format(lon, lat, starttime))
+        plt.show()
     '''
     tempobj = temp()
     url = tempobj.get_url(starttime, endtime)

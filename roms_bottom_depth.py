@@ -141,13 +141,14 @@ class temp(water):
     def get_data(self, url):
         data = jata.get_nc_data(url, 'h', 'lat_rho', 'lon_rho', 'temp', 's_rho','ocean_time')
         return data
-    def templine(self, lon, lat, depth, url):
+    def templine(self, lon, lat, url):
         data = self.get_data(url)
         lons = data['lon_rho'][:]
         lats = data['lat_rho'][:]
         index, d = self.nearest_point_index(lon, lat, lons, lats)
-        depth_layers = data['h'][index[0][0]][index[1][0]]*data['s_rho']
-        layer = np.argmin(abs(depth_layers-depth))
+        # depth_layers = data['h'][index[0][0]][index[1][0]]*data['s_rho']
+        # layer = np.argmin(abs(depth_layers-depth))
+        layer = -1
         temp = data['temp'][:, layer, index[0][0], index[1][0]]
         temptime = []
         for i in range(0, len(data['ocean_time'][:])):
@@ -184,7 +185,7 @@ def left_button_down(event):
         print "You click: ", lon, lat
         tempobj = temp()
         url = tempobj.get_url(starttime, endtime)
-        dtemp, dtime = tempobj.templine(lon, lat, depth, url)
+        dtemp, dtime = tempobj.templine(lon, lat, url)
         fig2 = plt.figure()
         ax2 = fig2.add_subplot(111)
         ax2.plot(dtime, dtemp)
@@ -193,7 +194,7 @@ def left_button_down(event):
     '''
     tempobj = temp()
     url = tempobj.get_url(starttime, endtime)
-    dtemp, dtime = tempobj.templine(x, y, depth, url)
+    dtemp, dtime = tempobj.templine(x, y, url)
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(dtime, dtemp)
@@ -233,16 +234,9 @@ dmap.drawmapboundary()
 
 cs = plt.contourf(data['lon_rho'], data['lat_rho'], data['h'], range(0,400),
                   extend='both')
+plt.title('ROMS Bttom temp of {0}'.format(starttime))
 plt.colorbar()
 # plt.clabel(cs, inline=0, fontsize=10)
-
-lon, lat = -74.8180769466, 37.6060398328
-tempobj = temp()
-url = tempobj.get_url(starttime, endtime)
-dtemp, dtime = tempobj.templine(lon, lat, depth, url)
-fig2 = plt.figure()
-ax2 = fig2.add_subplot(111)
-ax2.plot(dtime, dtemp)
 plt.show()
 '''
 # fig, axes = plt.subplots(nrows=2, ncols=1,sharex=True,sharey=True)

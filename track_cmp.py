@@ -250,8 +250,9 @@ class water_roms(water):
         mask = data['mask_rho'][:]
         lon_rho = data['lon_rho'][:]
         lat_rho = data['lat_rho'][:]
-        lons = jata.shrink(lon_rho, mask[1:,1:].shape)
-        lats = jata.shrink(lat_rho, mask[1:,1:].shape)
+        # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
+        # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
+        lons, lats = lon_rho[:-2, :-2], lat_rho[:-2, :-2]
         index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
         depth_layers = data['h'][index[0][0]][index[1][0]]*data['s_rho']
         layer = np.argmin(abs(depth_layers-depth))
@@ -260,8 +261,10 @@ class water_roms(water):
         # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         for i in range(0, len(data['u'][:])):
-            u_t = jata.shrink(u[i], mask[1:,1:].shape)
-            v_t = jata.shrink(v[i], mask[1:,1:].shape)
+            # u_t = jata.shrink(u[i], mask[1:,1:].shape)
+            # v_t = jata.shrink(v[i], mask[1:,1:].shape)
+            u_t = u[i][:-2, :]
+            v_t = v[i][:,:-2]
             # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
             u_p = u_t[index[0][0]][index[1][0]]
             v_p = v_t[index[0][0]][index[1][0]]
@@ -474,18 +477,13 @@ class water_fvcom(water):
         return nodes
 class water_drifter(water):
     def __init__(self, drifter_id):
-        # self.dataloc = "/net/home3/ocn/jmanning/py/jc/web_track/drift_tcs_2013_1.dat"
         self.drifter_id = drifter_id
-        # self.starttime = starttime
     def waternode(self, starttime=None, days=None):
         '''
         return drifter nodes
         if starttime is given, return nodes started from starttime
         if both starttime and days are given, return nodes of the specific time period
         '''
-        # self.drifter_id = jata.input_with_default('drifter ID', 139420691)
-        # self.starttime = datetime(year=2013, month=9, day=29, hour=11,minute=46)
-        # nodes = jata.data_extracted(self.dataloc, self.drifter_id, self.starttime)
         nodes = {}
         temp = getdrift(self.drifter_id)
         nodes['lon'] = np.array(temp[1])
@@ -541,8 +539,8 @@ class water_roms_rk4(water_roms):
         mask = data['mask_rho'][:]
         lon_rho = data['lon_rho'][:]
         lat_rho = data['lat_rho'][:]
-        lons = jata.shrink(lon_rho, mask[1:,1:].shape)
-        lats = jata.shrink(lat_rho, mask[1:,1:].shape)
+        # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
+        # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
         depth_layers = data['h'][index[0][0]][index[0][1]]*data['s_rho']
         layer = np.argmin(abs(depth_layers-depth))
@@ -551,36 +549,14 @@ class water_roms_rk4(water_roms):
         # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
         # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         for i in range(0, len(data['u'][:])):
-            u_t = jata.shrink(u[i], mask[1:,1:].shape)
-            v_t = jata.shrink(v[i], mask[1:,1:].shape)
-            # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
-            # u_p = u_t[index[0]][index[1]]
-            # v_p = v_t[index[0]][index[1]]
-            '''
-            for ut, vt in zip(u_p, v_p):
-                if ut:
-                    break
-            if not ut:
-                # raise Exception('point hit the land')
-                print 'point hit the land'
-                break
-            if not ut:
-                print 'point hit the land'
-                break
-            u_p = u_t[index[0]][index[1]]
-            v_p = v_t[index[0]][index[1]]
-            '''
+            # u_t = jata.shrink(u[i], mask[1:,1:].shape)
+            # v_t = jata.shrink(v[i], mask[1:,1:].shape)
+            u_t = u[i, :-2, :]
+            v_t = v[i, :, :-2]
             lon, lat, u_p, v_p = self.RungeKutta4_lonlat(lon,lat,lons,lats,u_t,v_t)
             if not u_p:
                 print 'point hit the land'
                 break
-            '''
-            dx = 60*60*float(u_p)
-            dy = 60*60*float(v_p)
-            lon = lon + dx/(111111*np.cos(lat*np.pi/180))
-            lat = lat + dy/111111
-            '''
-            # index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
             nodes['lon'] = np.append(nodes['lon'],lon)
             nodes['lat'] = np.append(nodes['lat'],lat)
         return nodes
@@ -756,10 +732,10 @@ elif modelname is 'FVCOM':
     plt.show()
 '''
 ########################main code###########################
-drifter_id = 110410712
+drifter_id = 118410701
 days = 3
 depth = -1
-starttime = '2011-10-15 00:00'
+starttime = '2011-08-02 00:00'
 
 starttime = datetime.strptime(starttime, '%Y-%m-%d %H:%M')
 drifter_id = jata.input_with_default('drifter_id', drifter_id)
@@ -815,7 +791,7 @@ plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend(loc='lower right')
 figname = 'track_cmp-{0}-{1}-{2}.png'.format(drifter_id, starttime, days)
-plt.savefig(figname, dpi=200)
+# plt.savefig(figname, dpi=200)
 # plt.show()
 
 r = min(len(nodes_drifter['lon']), len(nodes_roms['lon']))

@@ -148,7 +148,7 @@ class water_roms(water):
     '''
     ####(2009.10.11, 2013.05.19):version1(old) 2009-2013
     ####(2013.05.19, present): version2(new) 2013-present
-    (2006.01.01 01:00, present)
+    (2006.01.01 01:00, 2014.1.1 00:00)
     '''
     def __init__(self):
         pass

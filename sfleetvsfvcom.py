@@ -131,7 +131,7 @@ class water_fvcom(water):
                                                  '%Y-%m-%d %H:%M:%S')
                 index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+self.hours
                 index2 = index1 + self.hours
-                furl = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?h[0:1:48450],lat[0:1:48450],latc[0:1:90414],lon[0:1:48450],lonc[0:1:90414],u[{0}:1:{1}][0:1:44][0:1:90414],v[{0}:1:{1}][0:1:44][0:1:90414],siglay,temp[0:1:289668][0:1:44][0:1:48450],time[0:1:289668]'
+                furl = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?h[0:1:48450],lat[0:1:48450],latc[0:1:90414],lon[0:1:48450],lonc[0:1:90414],u[{0}:1:{1}][0:1:44][0:1:90414],v[{0}:1:{1}][0:1:44][0:1:90414],siglay,temp[{0}:1:{1}][0:1:44][0:1:48450],time[{0}:1:{1}]'
                 url.append(furl.format(index1, index2)) 
             elif time1 <= endtime < time2: # endtime is in GOM3_v11
                 url.extend(self.__temp(starttime,endtime,time1,time2))
@@ -140,14 +140,14 @@ class water_fvcom(water):
             elif time3 <= endtime < time4:
                 url.extend(self.__temp(starttime,endtime,time3,time4))
         elif self.modelname is "GOM3":
-            url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],siglay[0:1:39][0:1:51215],h[0:1:51215],u[{0}:1:{1}][0:1:39][0:1:95721],v[{0}:1:{1}][0:1:39][0:1:95721],temp[0:1:289668][0:1:44][0:1:48450],time[0:1:289668]'
+            url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],siglay[0:1:39][0:1:51215],h[0:1:51215],u[{0}:1:{1}][0:1:39][0:1:95721],v[{0}:1:{1}][0:1:39][0:1:95721],temp[{0}:1:{1}][0:1:44][0:1:48450],time[{0}:1:{1}]'
             period = starttime-\
                      (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
             index1 = period.total_seconds()/60/60
             index2 = index1 + self.hours
             url = url.format(index1, index2)
         elif self.modelname is "massbay":
-            url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?lon[0:1:98431],lat[0:1:98431],lonc[0:1:165094],latc[0:1:165094],siglay[0:1:9][0:1:98431],h[0:1:98431],u[{0}:1:{1}][0:1:9][0:1:165094],v[{0}:1:{1}][0:1:9][0:1:165094],temp[0:1:289668][0:1:44][0:1:48450],time[0:1:289668]'
+            url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?lon[0:1:98431],lat[0:1:98431],lonc[0:1:165094],latc[0:1:165094],siglay[0:1:9][0:1:98431],h[0:1:98431],u[{0}:1:{1}][0:1:9][0:1:165094],v[{0}:1:{1}][0:1:9][0:1:165094],temp[{0}:1:{1}][0:1:44][0:1:48450],time[{0}:1:{1}]'
             period = starttime-\
                      (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
             index1 = period.total_seconds()/60/60
@@ -200,9 +200,9 @@ class water_fvcom(water):
         '''
         start_daytime,end_daytime: [day,hour]
         '''
-        url_v11 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v11_{0}{1}.nc?lon[0:1:48727],lat[0:1:48727],lonc[0:1:90997],latc[0:1:90997],h[0:1:48727],u[{2}:1:{3}][0:1:39][0:1:90997],v[{2}:1:{3}][0:1:39][0:1:90997],siglay[0:1:39][0:1:48727],temp[0:1:289668][0:1:44][0:1:48450],time[0:1:286668]'
-        url_v12 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v12_{0}{1}.nc?lon[0:1:48859],lat[0:1:48859],lonc[0:1:91257],latc[0:1:91257],h[0:1:48859],u[{2}:1:{3}][0:1:39][0:1:91257],v[{2}:1:{3}][0:1:39][0:1:91257],siglay[0:1:39][0:1:48859],temp[0:1:289668][0:1:44][0:1:48450],time[0:1:289668]'
-        url_v13 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v13_{0}{1}.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],h[0:1:51215],u[{2}:1:{3}][0:1:39][0:1:95721],v[{2}:1:{3}][0:1:39][0:1:95721],siglay[0:1:39][0:1:51215],temp[0:1:289668][0:1:44][0:1:48450],time[0:1:289668]'
+        url_v11 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v11_{0}{1}.nc?lon[0:1:48727],lat[0:1:48727],lonc[0:1:90997],latc[0:1:90997],h[0:1:48727],u[{2}:1:{3}][0:1:39][0:1:90997],v[{2}:1:{3}][0:1:39][0:1:90997],siglay[0:1:39][0:1:48727],temp[{0}:1:{1}][0:1:44][0:1:48450],time[{0}:1:{1}]'
+        url_v12 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v12_{0}{1}.nc?lon[0:1:48859],lat[0:1:48859],lonc[0:1:91257],latc[0:1:91257],h[0:1:48859],u[{2}:1:{3}][0:1:39][0:1:91257],v[{2}:1:{3}][0:1:39][0:1:91257],siglay[0:1:39][0:1:48859],temp[{0}:1:{1}][0:1:44][0:1:48450],time[{0}:1:{1}]'
+        url_v13 = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Archive/NECOFS_GOM3_{0}/gom3v13_{0}{1}.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],h[0:1:51215],u[{2}:1:{3}][0:1:39][0:1:95721],v[{2}:1:{3}][0:1:39][0:1:95721],siglay[0:1:39][0:1:51215],temp[{0}:1:{1}][0:1:44][0:1:48450],time[{0}:1:{1}]'
         time1 = datetime(year=2011,month=1,day=1)      #all these datetime are made based on the model.
         time2 = datetime(year=2011,month=11,day=11)      #The model use different version data of different period.
         time3 = datetime(year=2013,month=05,day=9)

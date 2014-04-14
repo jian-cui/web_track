@@ -307,9 +307,10 @@ class water_fvcom(water):
         depth_total = siglay[:,kv]*h[kv]
         ###############layer###########################
         layer = np.argmin(abs(depth_total-depth))
-        print 'layer, kf', layer, kf[0][0]
+        print kv
+        print 'layer, kv', layer, kv[0][0]
         # for i in range(len(data['time'][:])):
-        temp = data['temp'][:, layer, kf[0][0]]
+        temp = data['temp'][:, layer, kv[0][0]]
         print 'l'
         m = pd.DataFrame(temp, index=data['time'][:])
         print 'a'
@@ -381,23 +382,16 @@ for k in range(len(obstso)): #
            print 'point not in fvcom domain'
            continue
         else:
-            print '2'
             fvcomobj = water_fvcom()
-            print '3'
             # modtso = pd.DataFrame()
             st=obstso.index[k]
-            print '4'
             et=st+timedelta(hours=1)
-            print '5'
             url_fvcom = fvcomobj.get_url(st,et )
-            print '6'
             modtso= fvcomobj.watertemp(lo, la,-1*obstso['MEAN_DEPTH'][k], url_fvcom[0])
-            print 'modtso.values[0]', modtso.values[0]
-            print 'run here'
             o.append(obstso['MEAN_TEMP'][k])
             m.append(modtso.values[0])
-            plt.plot(modtso.values[0],obstso['MEAN_TEMP'][k],'*', markersize=30)
+            plt.plot(modtso.values[0],obstso['MEAN_TEMP'][k],'.', markersize=30)
 plt.xlabel('MODEL (degC)')
 plt.ylabel('OBSERVATIONS (degC)')
-plt.title('Study Fleet vs FVCOM ')
+plt.title('Study Fleet vs FVCOM')
 plt.show()

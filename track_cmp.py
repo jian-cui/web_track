@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../moj')
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
@@ -6,7 +8,6 @@ import jmath, jata
 from datetime import datetime, timedelta
 from matplotlib import path
 from conversions import dm2dd
-import sys
 from getdata import getdrift
 import calendar
 import netCDF4
@@ -641,6 +642,7 @@ def angle_conversion(a):
     a = np.array(a)
     return a/180*np.pi
 def dist(lon1, lat1, lon2, lat2):
+    # calculate the distance of points
     R = 6371.004
     lon1, lat1 = angle_conversion(lon1), angle_conversion(lat1)
     lon2, lat2 = angle_conversion(lon2), angle_conversion(lat2)
@@ -751,11 +753,11 @@ else:
 lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
 starttime = nodes_drifter['time'][0]
 endtime = nodes_drifter['time'][-1]
-
+'''
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
-
+'''
 water_roms = water_roms()
 url_roms = water_roms.get_url(starttime, endtime)
 nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
@@ -772,36 +774,23 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 draw_basemap(fig, ax, lonsize, latsize)
 ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-# fig.ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
+# ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
+# ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
 ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
-ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
-'''
-l = len(nodes_drifter['time'])
-water_roms = water_roms()
-for i in range(l):
-    starttime = nodes_drifter['time'][i]
-    endtime = starttime+timedelta(hours=3)
-    lon, lat = nodes_drifter['lon'][i], nodes_drifter['lat'][i]
-    # water_roms = water_roms()
-    url_roms = water_roms.get_url(starttime, endtime)
-    nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
-    fig.ax.plot(nodes_roms['lon'], nodes_roms['lat'], 'bo-')
-'''
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend(loc='lower right')
 figname = 'track_cmp-{0}-{1}-{2}.png'.format(drifter_id, starttime, days)
 # plt.savefig(figname, dpi=200)
-# plt.show()
+plt.show()
 
+'''calculate the distance between model and observation. not good, because drifter loses some points.
+f = min(len(nodes_drifter['lon']), len(nodes_fvcom['lon']))
+dist_fvcom = dist(nodes_fvcom['lon'][:f],nodes_fvcom['lat'][:f],
+                  nodes_drifter['lon'][:r_rk4],nodes_drifter['lat'][:r_rk4])
 r = min(len(nodes_drifter['lon']), len(nodes_roms['lon']))
 dist_roms = dist(nodes_roms['lon'][0:r],nodes_roms['lat'][0:r],
                  nodes_drifter['lon'][0:r],nodes_drifter['lat'][0:r])
-'''
-r_rk4 = min(len(nodes_drifter['lon']), len(nodes_roms_rk4['lon']))
-dist_roms_rk4 = dist(nodes_roms_rk4['lon'][:r_rk4],nodes_roms_rk4['lat'][:r_rk4],
-                     nodes_drifter['lon'][:r_rk4],nodes_drifter['lat'][:r_rk4])
-'''
 f = min(len(nodes_drifter['lon']), len(nodes_fvcom['lon']))
 dist_fvcom = dist(nodes_fvcom['lon'][:f],nodes_fvcom['lat'][:f],
                   nodes_drifter['lon'][:f],nodes_drifter['lat'][:f])
@@ -809,7 +798,8 @@ fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
 plt.plot(dist_roms, 'r-', label='roms')
 # plt.plot(dist_roms_rk4, 'b-', label='roms_rk4')
-plt.plot(dist_fvcom, 'y-', label='fvcom')
+# plt.plot(dist_fvcom, 'y-', label='fvcom')
 plt.legend(loc='lower right')
 plt.title('Distance of drifter data and model data')
 plt.show()
+'''

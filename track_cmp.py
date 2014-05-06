@@ -159,29 +159,6 @@ class water_roms(water):
         '''
         get url according to starttime and endtime.
         '''
-        '''
-        self.starttime = starttime
-        self.days = int((endtime-starttime).total_seconds()/60/60/24)+1 # get total days
-        time1 = datetime(year=2009,month=10,day=11) # time of url1 that starts from
-        time2 = datetime(year=2013,month=5,day=19)  # time of url2 that starts from
-        url1 = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2009_da/avg?lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129],mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129]'
-        url2 = 'http://tds.marine.rutgers.edu:8080/thredds/dodsC/roms/espresso/2013_da/avg_Best/ESPRESSO_Real-Time_v2_Averages_Best_Available_best.ncd?mask_rho[0:1:81][0:1:129],u[{0}:1:{1}][0:1:35][0:1:81][0:1:128],v[{0}:1:{1}][0:1:35][0:1:80][0:1:129],lon_rho[0:1:81][0:1:129],lat_rho[0:1:81][0:1:129]'
-        if endtime >= time2:
-            if starttime >=time2:
-                index1 = (starttime - time2).days
-                index2 = index1 + self.days
-                url = url2.format(index1, index2)
-            elif time1 <= starttime < time2:
-                url = []
-                index1 = (starttime - time1).days
-                url.append(url1.format(index1, 1316))
-                url.append(url2.format(0, self.days))
-        elif time1 <= endtime < time2:
-            index1 = (starttime-time1).days
-            index2 = index1 + self.days
-            url = url1.format(index1, index2)
-        return url
-        '''
         self.starttime = starttime
         # self.hours = int((endtime-starttime).total_seconds()/60/60) # get total hours
         # time_r = datetime(year=2006,month=1,day=9,hour=1,minute=0)
@@ -256,7 +233,7 @@ class water_roms(water):
         lons, lats = lon_rho[:-2, :-2], lat_rho[:-2, :-2]
         index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
         depth_layers = data['h'][index[0][0]][index[1][0]]*data['s_rho']
-        layer = np.argmin(abs(depth_layers-depth))
+        layer = np.argmin(abs(depth_layers+depth))
         u = data['u'][:,layer]
         v = data['v'][:,layer]
         # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
@@ -296,7 +273,7 @@ class water_roms(water):
         return nodes
 class water_fvcom(water):
     def __init__(self):
-        self.modelname = '30yr'
+        self.modelname = 'GOM3'
     def get_url(self, starttime, endtime):
         '''
         get different url according to starttime and endtime.
@@ -313,7 +290,7 @@ class water_fvcom(water):
                 yearnum = starttime.year-1981
                 standardtime = datetime.strptime(str(starttime.year)+'-01-01 00:00:00',
                                                  '%Y-%m-%d %H:%M:%S')
-                index1 = 26340+35112*(yearnum/4)+8772*(yearnum%4)+1+self.hours
+                index1 = int(26340+35112*(yearnum/4)+8772*(yearnum%4)+1+self.hours)
                 index2 = index1 + self.hours
                 furl = 'http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?h[0:1:48450],lat[0:1:48450],latc[0:1:90414],lon[0:1:48450],lonc[0:1:90414],u[{0}:1:{1}][0:1:44][0:1:90414],v[{0}:1:{1}][0:1:44][0:1:90414],siglay'
                 url.append(furl.format(index1, index2)) 
@@ -327,14 +304,15 @@ class water_fvcom(water):
             url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],siglay[0:1:39][0:1:51215],h[0:1:51215],u[{0}:1:{1}][0:1:39][0:1:95721],v[{0}:1:{1}][0:1:39][0:1:95721]'
             period = starttime-\
                      (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
-            index1 = period.total_seconds()/60/60
+            index1 = int(period.total_seconds()/60/60)
+            print 'index1', index1
             index2 = index1 + self.hours
             url = url.format(index1, index2)
         elif self.modelname is "massbay":
             url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?lon[0:1:98431],lat[0:1:98431],lonc[0:1:165094],latc[0:1:165094],siglay[0:1:9][0:1:98431],h[0:1:98431],u[{0}:1:{1}][0:1:9][0:1:165094],v[{0}:1:{1}][0:1:9][0:1:165094]'
             period = starttime-\
                      (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
-            index1 = period.total_seconds()/60/60
+            index1 = int(period.total_seconds()/60/60)
             index2 = index1 + self.hours
             url = url.format(index1, index2)
         return url
@@ -451,6 +429,7 @@ class water_fvcom(water):
         nodes = dict(lon=[], lat=[])
         kf,distanceF = self.nearest_point_index(lon,lat,lonc,latc,num=1)
         kv,distanceV = self.nearest_point_index(lon,lat,lonv,latv,num=1)
+        print kf
         if h[kv] < 0:
             sys.exit('Sorry, your position is on land, please try another point')
         depth_total = siglay[:,kv]*h[kv]
@@ -544,7 +523,7 @@ class water_roms_rk4(water_roms):
         # lats = jata.shrink(lat_rho, mask[1:,1:].shape)
         index, nearestdistance = self.nearest_point_index(lon,lat,lons,lats)
         depth_layers = data['h'][index[0][0]][index[0][1]]*data['s_rho']
-        layer = np.argmin(abs(depth_layers-depth))
+        layer = np.argmin(abs(depth_layers+depth))
         u = data['u'][:,layer]
         v = data['v'][:,layer]
         # lons = jata.shrink(lon_rho, mask[1:,1:].shape)
@@ -734,6 +713,7 @@ elif modelname is 'FVCOM':
     plt.show()
 '''
 ########################main code###########################
+'''
 drifter_id = 118410701
 days = 3
 depth = -1
@@ -749,38 +729,45 @@ if starttime:
         nodes_drifter = drifter.waternode(starttime)
 else:
     nodes_drifter = drifter.waternode()
-
-lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
-starttime = nodes_drifter['time'][0]
-endtime = nodes_drifter['time'][-1]
 '''
+#lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
+#starttime = nodes_drifter['time'][0]
+#endtime = nodes_drifter['time'][-1]
+
+lat, lon = 41.433, -69.258
+starttime = datetime(2014,05,05,03,42)
+endtime = starttime + timedelta(days=2)
+depth = -1
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
-'''
-water_roms = water_roms()
-url_roms = water_roms.get_url(starttime, endtime)
-nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
+
+#water_roms = water_roms()
+#url_roms = water_roms.get_url(starttime, endtime)
+#nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
 '''
 water_roms_rk4 = water_roms_rk4()
 url_roms_rk4 = water_roms_rk4.get_url(starttime, endtime)
 nodes_roms_rk4 = water_roms_rk4.waternode(lon, lat, depth, url_roms_rk4)
-'''
+
 lonsize = [min_data(nodes_drifter['lon'],nodes_roms['lon'])-0.5,
            max_data(nodes_drifter['lon'],nodes_roms['lon'])+0.5]
 latsize = [min_data(nodes_drifter['lat'],nodes_roms['lat'])-0.5,
            max_data(nodes_drifter['lat'],nodes_roms['lat'])+0.5]
+           '''
+lonsize = [min(nodes_fvcom['lon'])-1, max(nodes_fvcom['lon'])+1]
+latsize = [min(nodes_fvcom['lat'])-1, max(nodes_fvcom['lat'])+1]
 fig = plt.figure()
 ax = fig.add_subplot(111)
 draw_basemap(fig, ax, lonsize, latsize)
-ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
+#ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 # ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
-# ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
-ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
+ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+# ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
-plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
+# plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend(loc='lower right')
-figname = 'track_cmp-{0}-{1}-{2}.png'.format(drifter_id, starttime, days)
+# figname = 'track_cmp-{0}-{1}-{2}.png'.format(drifter_id, starttime, days)
 # plt.savefig(figname, dpi=200)
 plt.show()
 

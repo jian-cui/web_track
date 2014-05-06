@@ -15,6 +15,7 @@ from datetime import timedelta
 from conversions import dm2dd
 import sys
 import netCDF4
+from matplotlib import path
 #class figure_map(figure):
 
 #la=4224.7 # this can be in decimal degrees instead of deg-minutesif it is easier to input
@@ -40,7 +41,85 @@ import netCDF4
 #else:
 #    isNum(lo)
 #    lo = float()
-
+def bbox2ij(lons, lats, bbox):
+    """
+    Return tuple of indices of points that are completely covered by the 
+    specific boundary box.
+    i = bbox2ij(lon,lat,bbox)
+    lons,lats = 2D arrays (list) that are the target of the subset, type: np.ndarray
+    bbox = list containing the bounding box: [lon_min, lon_max, lat_min, lat_max]
+ 
+    Example
+    -------  
+    >>> i0,i1,j0,j1 = bbox2ij(lat_rho,lon_rho,[-71, -63., 39., 46])
+    >>> h_subset = nc.variables['h'][j0:j1,i0:i1]       
+    """
+    bbox = np.array(bbox)
+    mypath = np.array([bbox[[0,1,1,0]],bbox[[2,2,3,3]]]).T
+    p = path.Path(mypath)
+    points = np.vstack((lons.flatten(),lats.flatten())).T
+    tshape = np.shape(lons)
+    # inside = p.contains_points(points).reshape((n,m))
+    inside = []
+    for i in range(len(points)):
+        inside.append(p.contains_point(points[i]))
+    inside = np.array(inside, dtype=bool).reshape(tshape)
+    # ii,jj = np.meshgrid(xrange(m),xrange(n))
+    index = np.where(inside==True)
+    if not index[0].tolist():          # bbox covers no area
+        raise Exception('no points in this area')
+    else:
+        # points_covered = [point[index[i]] for i in range(len(index))]
+        # for i in range(len(index)):
+            # p.append(point[index[i])
+        # i0,i1,j0,j1 = min(index[1]),max(index[1]),min(index[0]),max(index[0])
+        return index
+def nearest_point_index(lon, lat, lons, lats, length=(1, 1),num=4):
+    '''
+    Return the index of the nearest rho point.
+    lon, lat: the coordinate of start point, float
+    lats, lons: the coordinate of points to be calculated.
+    length: the boundary box.
+    '''
+    bbox = [lon-length[0], lon+length[0], lat-length[1], lat+length[1]]
+    # i0, i1, j0, j1 = self.bbox2ij(lons, lats, bbox)
+    # lon_covered = lons[j0:j1+1, i0:i1+1]
+    # lat_covered = lats[j0:j1+1, i0:i1+1]
+    # temp = np.arange((j1+1-j0)*(i1+1-i0)).reshape((j1+1-j0, i1+1-i0))
+    # cp = np.cos(lat_covered*np.pi/180.)
+    # dx=(lon-lon_covered)*cp
+    # dy=lat-lat_covered
+    # dist=dx*dx+dy*dy
+    # i=np.argmin(dist)
+    # # index = np.argwhere(temp=np.argmin(dist))
+    # index = np.where(temp==i)
+    # min_dist=np.sqrt(dist[index])
+    # return index[0]+j0, index[1]+i0
+    index = bbox2ij(lons, lats, bbox)
+    lon_covered = lons[index]
+    lat_covered = lats[index]
+    # if len(lat_covered) < num:
+        # raise ValueError('not enough points in the bbox')
+    # lon_covered = np.array([lons[i] for i in index])
+    # lat_covered = np.array([lats[i] for i in index])
+    cp = np.cos(lat_covered*np.pi/180.)
+    dx = (lon-lon_covered)*cp
+    dy = lat-lat_covered
+    dist = dx*dx+dy*dy
+     
+    # get several nearest points
+    dist_sort = np.sort(dist)[0:9]
+    findex = np.where(dist==dist_sort[0])
+    lists = [[]] * len(findex)
+    for i in range(len(findex)):
+        lists[i] = findex[i]
+    if num > 1:
+        for j in range(1,num):
+            t = np.where(dist==dist_sort[j])
+            for i in range(len(findex)):
+                 lists[i] = np.append(lists[i], t[i])
+    indx = [i[lists] for i in index]
+    return indx, dist_sort[0:num]
 def input_with_default(data, v_default):
     '''
     return a str
@@ -110,14 +189,15 @@ def get_indices(modelname, starttime, time_interval=None):
         timesnum = starttime.year-1981
         standardtime = datetime.strptime(str(starttime.year) + '-01-01 00:00:00', "%Y-%m-%d %H:%M:%S")
         timedeltaprocess = (starttime-standardtime).days
-        startrecord = 26340+35112*(timesnum/4) + 8772*(timesnum%4) + 1 + timedeltaprocess*24
+        startrecord = 26340+35112*(timesnum/4)+8772*(timesnum%4)+1+\
+                      timedeltaprocess*24
         endrecord = startrecord + 24*numdays
     elif modelname == 'GOM3' and time_interval:
-        timeperiod = (starttime+time_interval) - (datetime.now()-timedelta(days=3))
-        startrecord=(timeperiod.seconds)/60/60
+        timeperiod = starttime - (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
+        startrecord=int((timeperiod.seconds)/60/60)
         endrecord=startrecord + 24*(time_interval.days)
     elif modelname == 'massbay' and time_interval:
-        timeperiod = (starttime+time_interval) - (datetime.now()-timedelta(days=3))
+        timeperiod = starttime - (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
         startrecord = (timeperiod.seconds)/60/60
         endrecord = startrecord + 24*(time_interval.days)
     else:
@@ -170,18 +250,26 @@ def url_with_time_position(modelname, data):
     return url
 
 def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord):
+    print la, lo
     if lo>90:
         [la,lo]=dm2dd(la,lo)
-    latd,lond=[],[]
-    kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
-    kv,distanceV=nearlonlat(lon,lat,lo,la)
+    print la, lo
+    latd,lond=[la],[lo]
+    # kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
+    # kv,distanceV=nearlonlat(lon,lat,lo,la)
+    kf,distanceF = nearest_point_index(lo,la,lonc,latc,num=1)
+    kv,distanceV = nearest_point_index(lo,la,lon,lat,num=1)
+    kf = kf[0][0]
+    kv = kv[0][0]
+    print kf
     if h[kv] < 0:
         print 'Sorry, your position is on land, please try another point'
         sys.exit()
     depthtotal=siglay[:,kv]*h[kv]
     layer=np.argmin(abs(depthtotal-depth))
-    for i in range(startrecord,endrecord):
+    for i in range(startrecord,endrecord):# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ############read the particular time model from website#########
+        print la, lo
         timeurl='['+str(i)+':1:'+str(i)+']'
         uvposition=str([layer])+str([kf])
         data_want = ('u'+timeurl+uvposition, 'v'+timeurl+uvposition)
@@ -199,7 +287,6 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
         u=np.array(dataset['u'])
         v=np.array(dataset['v'])
 ################get the point according the position###################
-#               print kf,u[0,0,0],v[0,0,0],layer
         par_u=u[0,0,0]
         par_v=v[0,0,0]
         xdelta=par_u*60*60 #get_coors
@@ -210,8 +297,11 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
         lo=lo+londelta
         latd.append(la)
         lond.append(lo)
-        kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
-        kv,distanceV=nearlonlat(lon,lat,lo,la)# nearest triangle vertex V - vertex
+#        kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
+#        kv,distanceV=nearlonlat(lon,lat,lo,la)# nearest triangle vertex V - vertex
+        kf,distanceF = nearest_point_index(lo,la,lonc,latc,num=1)
+        kv,distanceV = nearest_point_index(lo,la,lon,lat,num=1)
+        kf, kv = kf[0][0], kv[0][0]
         depthtotal=siglay[:,kv]*h[kv]
 #        layer=np.argmin(abs(depthtotal-depth))
         if distanceV>=0.3:
@@ -394,17 +484,16 @@ h=np.array(dataset.variables['h'][:])
 #h=np.array(dataset['h'])
 
 if methods_get_startpoint == "input":
-    la = float(input_with_default('lat', 3934.4644))
-    lo = float(input_with_default('lon', 7031.8486))
+    la = float(input_with_default('lat', 41.433))
+    lo = float(input_with_default('lon', -69.258))
     latd, lond = get_coors(modelname, lo, la, lonc, latc, lon, lat,
                            siglay, h, depth, startrecord, endrecord)
-    fig1, ax1 = draw_figure(latd, lond)
     pointnum = len(latd)
-    save_data(pointnum, TIME, latd, lond)
+    # save_data(pointnum, TIME, latd, lond)
     extra_lat=[(max(latd)-min(latd))/10.]
     extra_lon=[(max(lond)-min(lond))/10.]
-    latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
-    lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
+    latsize=[min(latd)-extra_lat-1,max(latd)+extra_lat+1]
+    lonsize=[min(lond)-extra_lon-1,max(lond)+extra_lon+1]
     fig2, ax2 = draw_figure(latsize, lonsize)
     plt.annotate('Startpoint',
                  xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),

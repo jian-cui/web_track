@@ -269,7 +269,7 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
     layer=np.argmin(abs(depthtotal-depth))
     for i in range(startrecord,endrecord):# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ############read the particular time model from website#########
-        print la, lo
+        print 'la, lo, i', la, lo, i
         timeurl='['+str(i)+':1:'+str(i)+']'
         uvposition=str([layer])+str([kf])
         data_want = ('u'+timeurl+uvposition, 'v'+timeurl+uvposition)
@@ -286,6 +286,7 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
         dataset = open_url(url)
         u=np.array(dataset['u'])
         v=np.array(dataset['v'])
+        print 'u, v', u, v
 ################get the point according the position###################
         par_u=u[0,0,0]
         par_v=v[0,0,0]
@@ -456,7 +457,7 @@ datetime_today = datetime.now().replace(hour=0, minute=0, second=0,microsecond=0
 if modelname=="massbay" or "GOM3":
     time_interval = timedelta(days=numdays)
     if TIME+time_interval>datetime_today+timedelta(days=3) or\
-       TIME-time_interval<datetime_today-timedelta(days=3):
+       TIME+time_interval<datetime_today-timedelta(days=3):
         sys.exit("please check your numday.access period is in [now-3days,now+3days]")
     startrecord, endrecord = get_indices(modelname, TIME, time_interval)
     data = ('lon', 'lat', 'latc', 'lonc', 'siglay', 'h',

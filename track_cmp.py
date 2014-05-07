@@ -441,6 +441,7 @@ class water_fvcom(water):
             # v_t = np.array(data['v'])[i,layer,kf]
             u_t = data['u'][i, layer, kf[0][0]]
             v_t = data['v'][i, layer, kf[0][0]]
+            print 'u_t, v_t, i', u_t, v_t, i
             dx = 60*60*u_t
             dy = 60*60*v_t
             lon = lon + (dx/(111111*np.cos(lat*np.pi/180)))
@@ -741,7 +742,9 @@ depth = -1
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
-
+print nodes_fvcom['lon']
+print nodes_fvcom['lat']
+glider_lon, glider_lat = dm2dd(4059.8, 6906.8)
 #water_roms = water_roms()
 #url_roms = water_roms.get_url(starttime, endtime)
 #nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
@@ -763,6 +766,7 @@ draw_basemap(fig, ax, lonsize, latsize)
 #ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 # ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
 ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
+ax.plot(glider_lon, glider_lat, 'r.')
 # ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
 # plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))

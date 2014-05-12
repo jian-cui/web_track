@@ -429,7 +429,7 @@ class water_fvcom(water):
         nodes = dict(lon=[], lat=[])
         kf,distanceF = self.nearest_point_index(lon,lat,lonc,latc,num=1)
         kv,distanceV = self.nearest_point_index(lon,lat,lonv,latv,num=1)
-        print kf
+        print 'kf', kf
         if h[kv] < 0:
             sys.exit('Sorry, your position is on land, please try another point')
         depth_total = siglay[:,kv]*h[kv]
@@ -714,7 +714,6 @@ elif modelname is 'FVCOM':
     plt.show()
 '''
 ########################main code###########################
-'''
 drifter_id = 118410701
 days = 3
 depth = -1
@@ -730,46 +729,35 @@ if starttime:
         nodes_drifter = drifter.waternode(starttime)
 else:
     nodes_drifter = drifter.waternode()
-'''
-#lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
-#starttime = nodes_drifter['time'][0]
-#endtime = nodes_drifter['time'][-1]
 
-lat, lon = 41.433, -69.258
-starttime = datetime(2014,05,05,03,42)
-endtime = starttime + timedelta(days=2)
-depth = -1
+lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
+starttime = nodes_drifter['time'][0]
+endtime = nodes_drifter['time'][-1]
+
 water_fvcom =  water_fvcom()
 url_fvcom = water_fvcom.get_url(starttime, endtime)
 nodes_fvcom = water_fvcom.waternode(lon,lat,depth,url_fvcom)
-print nodes_fvcom['lon']
-print nodes_fvcom['lat']
-glider_lon, glider_lat = dm2dd(4059.8, 6906.8)
-#water_roms = water_roms()
-#url_roms = water_roms.get_url(starttime, endtime)
-#nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
+water_roms = water_roms()
+url_roms = water_roms.get_url(starttime, endtime)
+nodes_roms = water_roms.waternode(lon, lat, depth, url_roms)
 '''
 water_roms_rk4 = water_roms_rk4()
 url_roms_rk4 = water_roms_rk4.get_url(starttime, endtime)
 nodes_roms_rk4 = water_roms_rk4.waternode(lon, lat, depth, url_roms_rk4)
-
+'''
 lonsize = [min_data(nodes_drifter['lon'],nodes_roms['lon'])-0.5,
            max_data(nodes_drifter['lon'],nodes_roms['lon'])+0.5]
 latsize = [min_data(nodes_drifter['lat'],nodes_roms['lat'])-0.5,
            max_data(nodes_drifter['lat'],nodes_roms['lat'])+0.5]
-           '''
-lonsize = [min(nodes_fvcom['lon'])-1, max(nodes_fvcom['lon'])+1]
-latsize = [min(nodes_fvcom['lat'])-1, max(nodes_fvcom['lat'])+1]
 fig = plt.figure()
 ax = fig.add_subplot(111)
 draw_basemap(fig, ax, lonsize, latsize)
-#ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
+ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
 # ax.plot(nodes_roms_rk4['lon'],nodes_roms_rk4['lat'],'bo-',label='roms_rk4')
 ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
-ax.plot(glider_lon, glider_lat, 'r.')
-# ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
+ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
 plt.annotate('Startpoint', xy=(lon, lat), arrowprops=dict(arrowstyle='simple'))
-# plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
+plt.title('ID: {0} {1} {2} days'.format(drifter_id, starttime, days))
 plt.legend(loc='lower right')
 # figname = 'track_cmp-{0}-{1}-{2}.png'.format(drifter_id, starttime, days)
 # plt.savefig(figname, dpi=200)

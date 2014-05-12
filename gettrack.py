@@ -128,25 +128,22 @@ def get_url(urlname, stime, new_numdays = None):
         timedeltaprocess=(stime-standardtime).days
         startrecord=26340+35112*(timesnum/4)+8772*(timesnum%4)+1+timedeltaprocess*24
         endrecord=startrecord+24*numdays
-        url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+ \
-            'lon,lat,latc,lonc,siglay,h,Times[
-    return i,min_dist'+str(startrecord)+':1:'+str(startrecord)+']'
-        url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+
+        url='http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3?'+\
             'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
     elif urlname == 'GOM3' and new_numdays:
         timeperiod=(TIME+new_numdays)-(datetime.now()-timedelta(days=3))
-        startrecord=(timeperiod.seconds)/60/60
+        startrecord=(timeperiod.total_seconds)/60/60
         endrecord=startrecord+24*(new_numdays.days)
         url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?"+\
             'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
     elif urlname == 'massbay' and new_numdays:
         timeperiod=(TIME+new_numdays)-(datetime.now()-timedelta(days=3))
-        startrecord=(timeperiod.seconds)/60/60
+        startrecord=(timeperiod.total_seconds)/60/60
         endrecord=startrecord+24*(new_numdays.days)
         url="http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?"+\
             'lon,lat,latc,lonc,siglay,h,Times['+str(startrecord)+':1:'+str(startrecord)+']'
     else:
-        raise Exception('You need to input new_numdays if model name is massbay or GOM3)
+        raise Exception('You need to input new_numdays if model name is massbay or GOM3')
     return url, startrecord, endrecord
 
 #latsize=[39,45]
@@ -183,7 +180,7 @@ def get_coors(urlname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecor
         sys.exit()
     depthtotal=siglay[:,kv]*h[kv]
     layer=np.argmin(abs(depthtotal-depth))
-
+    print 'layer', layer
     for i in range(startrecord,endrecord):
 ############read the particular time model from website#########
                timeurl='['+str(i)+':1:'+str(i)+']'
@@ -211,6 +208,7 @@ def get_coors(urlname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecor
                londelta=(xdelta/(111111*np.cos(la*np.pi/180)))
                la=la+latdelta
                lo=lo+londelta
+               print la, lo
                latd.append(la)
                lond.append(lo)
                kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
@@ -290,7 +288,6 @@ def on_press2(event):
     else:
         print "Please press left mouse button in the map area"
 def draw_figure(latsize, lonsize, interval_lat = 1, interval_lon = 1):
-#    p = plt.figure(figsize = (7, 6))
     p = plt.figure()
     dmap = Basemap(projection='cyl',llcrnrlat=min(latsize)-0.01,urcrnrlat=max(latsize)+0.01,\
             llcrnrlon=min(lonsize)-0.01,urcrnrlon=max(lonsize)+0.01,resolution='h')
@@ -311,33 +308,24 @@ def dist_cmp(v, v1, v2):
         return d2
     else:
         return d1
-#def draw_map_click():
-#    fig1, m1 = draw_figure(lat,lon)
-#    cid1 = fig1.canvas.mpl_connect('button_press_event', on_press)
-#    plt.title(urlname+' model track Depth:'+str(depth)+' Time:'+str(TIME))
-#    plt.savefig(urlname+'driftrack.png', dpi = 200)
-#    plt.show()
 
 ######### HARDCODES ########
 print 'This routine reads a control file called ctrl_trackzoomin.csv'
 urlname=open("ctrl_trackzoomin.csv", "r").readlines()[0][37:-1]
 depth=int(open("ctrl_trackzoomin.csv", "r").readlines()[1][22:-1])
 TIME=open("ctrl_trackzoomin.csv", "r").readlines()[2][31:-1]
-#TIME = datetime.now()
 numdays=int(open("ctrl_trackzoomin.csv", "r").readlines()[3][24:-1])
 TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
 methods_get_position = open("ctrl_trackzoomin.csv", "r").readlines()[4][35:-1]
 ID = int(input_with_default('ID', 130400681))
 
 if urlname=="massbay" or "GOM3":
-#    TIME=datetime.strptime(TIME, "%Y-%m-%d %H:%M:%S")
     now=datetime.now()
     if TIME>now:
          diff=(TIME-now).days
     else:
          diff=(now-TIME).days
     if diff>3:
-#        print "please check your input start time,within 3 days both side form now on"
         sys.exit("please check your input start time,within 3 days both side form now on")
     new_numdays=timedelta(days=numdays)
     if TIME+new_numdays>now+timedelta(days=3):
@@ -356,16 +344,17 @@ siglay=np.array(dataset['siglay'])
 h=np.array(dataset['h'])    
 
 if methods_get_position == "input":
-    la = float(input_with_default('lat', 3934.4644))
-    lo = float(input_with_default('lon', 7031.8486))
+    # la = float(input_with_default('lat', 39.3.4644))
+    # lo = float(input_with_default('lon', -70.318486))
+    la = float(input_with_default('lat', 41.433))
+    lo = float(input_with_default('lon', -69.258))
     latd, lond = get_coors(urlname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord)
-    fig ,m = draw_figure(latd, lond)
     pointnum = len(latd)
-    save_data(pointnum, TIME, latd, lond)
+    # save_data(pointnum, TIME, latd, lond)
     extra_lat=[(max(latd)-min(latd))/10.]
     extra_lon=[(max(lond)-min(lond))/10.]
-    latsize=[min(latd)-extra_lat,max(latd)+extra_lat]
-    lonsize=[min(lond)-extra_lon,max(lond)+extra_lon]
+    latsize=[min(latd)-extra_lat-1,max(latd)+extra_lat+1]
+    lonsize=[min(lond)-extra_lon-1,max(lond)+extra_lon+1]
     fig,ax = draw_figure(latsize, lonsize)
     plt.annotate('Startpoint',xytext=(lond[0]+.5*dist_cmp(lond[0], lonsize[0], lonsize[1]),\
                 latd[0]+.5*dist_cmp(latd[0], latsize[0], latsize[1])),xy=(lond[0] ,latd[0]),\

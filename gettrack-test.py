@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon Jun 17 10:15:52 2013
 This toutine reads a control file called ctrl_trackzoomin.csv
@@ -194,11 +193,11 @@ def get_indices(modelname, starttime, time_interval=None):
         endrecord = startrecord + 24*numdays
     elif modelname == 'GOM3' and time_interval:
         timeperiod = starttime - (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
-        startrecord=int((timeperiod.seconds)/60/60)
+        startrecord=int(timeperiod.total_seconds()/60/60)
         endrecord=startrecord + 24*(time_interval.days)
     elif modelname == 'massbay' and time_interval:
         timeperiod = starttime - (datetime.now().replace(hour=0,minute=0)-timedelta(days=3))
-        startrecord = (timeperiod.seconds)/60/60
+        startrecord = int(timeperiod.total_seconds()/60/60)
         endrecord = startrecord + 24*(time_interval.days)
     else:
         raise Exception('You need to input time_interval if model name is massbay or GOM3')
@@ -250,10 +249,9 @@ def url_with_time_position(modelname, data):
     return url
 
 def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrecord, endrecord):
-    print la, lo
     if lo>90:
         [la,lo]=dm2dd(la,lo)
-    print la, lo
+    print 'la, lo',la, lo
     latd,lond=[la],[lo]
     # kf,distanceF=nearlonlat(lonc,latc,lo,la) # nearest triangle center F - face
     # kv,distanceV=nearlonlat(lon,lat,lo,la)
@@ -261,7 +259,7 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
     kv,distanceV = nearest_point_index(lo,la,lon,lat,num=1)
     kf = kf[0][0]
     kv = kv[0][0]
-    print kf
+    print 'kf:', kf
     if h[kv] < 0:
         print 'Sorry, your position is on land, please try another point'
         sys.exit()
@@ -269,7 +267,7 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
     layer=np.argmin(abs(depthtotal-depth))
     for i in range(startrecord,endrecord):# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ############read the particular time model from website#########
-        print 'la, lo, i', la, lo, i
+        # print 'la, lo, i', la, lo, i
         timeurl='['+str(i)+':1:'+str(i)+']'
         uvposition=str([layer])+str([kf])
         data_want = ('u'+timeurl+uvposition, 'v'+timeurl+uvposition)
@@ -286,7 +284,7 @@ def get_coors(modelname, lo, la, lonc, latc, lon, lat, siglay, h, depth,startrec
         dataset = open_url(url)
         u=np.array(dataset['u'])
         v=np.array(dataset['v'])
-        print 'u, v', u, v
+        print 'u, v, i', u[0,0,0], v[0,0,0],i
 ################get the point according the position###################
         par_u=u[0,0,0]
         par_v=v[0,0,0]
@@ -491,8 +489,8 @@ if methods_get_startpoint == "input":
                            siglay, h, depth, startrecord, endrecord)
     pointnum = len(latd)
     # save_data(pointnum, TIME, latd, lond)
-    extra_lat=[(max(latd)-min(latd))/10.]
-    extra_lon=[(max(lond)-min(lond))/10.]
+    extra_lat=(max(latd)-min(latd))/10.
+    extra_lon=(max(lond)-min(lond))/10.
     latsize=[min(latd)-extra_lat-1,max(latd)+extra_lat+1]
     lonsize=[min(lond)-extra_lon-1,max(lond)+extra_lon+1]
     fig2, ax2 = draw_figure(latsize, lonsize)

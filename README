@@ -9,6 +9,8 @@ calc_sep_dist.py:
 gettrack.py & gettrack-test.py:
 	diffrence from 'gettrack.py':
 		 get_indices, url_with_time_position, on_left_click_zoomin(not use), on_left_button_down
+gettrack-test.py:
+        Better than gettrack.py. Use control file to forecast.
 romstest.py:
         use model "ROMS"
 drifter.py:
